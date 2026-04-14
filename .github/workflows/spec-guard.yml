@@ -1,0 +1,24 @@
+name: spec-guard
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify-xs-pair:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify indicator and trading parity
+        run: >
+          python scripts/verify_xs_pair.py
+          --indicator templates/xs/indicator.template.xs
+          --trading templates/xs/trading.template.xs

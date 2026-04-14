@@ -1,0 +1,351 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Hsu7183/xs-core-engine/specs/strategy-spec.schema.json",
+  "title": "XS Core Engine Strategy Spec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "strategyId",
+    "title",
+    "market",
+    "timeframe",
+    "history",
+    "executionModel",
+    "dataSafety",
+    "crossFrequency",
+    "dailyAnchors",
+    "logicParity",
+    "output"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "strategyId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "market": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbol",
+        "instrumentType",
+        "timezone",
+        "session"
+      ],
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "const": "TXF"
+        },
+        "instrumentType": {
+          "type": "string",
+          "const": "TAIFEX_FUTURES"
+        },
+        "timezone": {
+          "type": "string",
+          "const": "Asia/Taipei"
+        },
+        "session": {
+          "type": "string",
+          "const": "DAY_TRADE"
+        }
+      }
+    },
+    "timeframe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "barFreq",
+        "barInterval",
+        "adjusted"
+      ],
+      "properties": {
+        "barFreq": {
+          "type": "string",
+          "const": "Min"
+        },
+        "barInterval": {
+          "type": "integer",
+          "const": 1
+        },
+        "adjusted": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "warmupBars",
+        "sysHistDBars",
+        "sysHistMBars"
+      ],
+      "properties": {
+        "warmupBars": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sysHistDBars": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sysHistMBars": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "executionModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decisionSource",
+        "executionMoment",
+        "singleExecutionPerBar",
+        "exitBeforeEntry",
+        "allowSameBarReversal",
+        "allowSignalCarry"
+      ],
+      "properties": {
+        "decisionSource": {
+          "type": "string",
+          "const": "PREVIOUS_BAR_ONLY"
+        },
+        "executionMoment": {
+          "type": "string",
+          "const": "CURRENT_BAR_OPEN"
+        },
+        "singleExecutionPerBar": {
+          "type": "boolean",
+          "const": true
+        },
+        "exitBeforeEntry": {
+          "type": "boolean",
+          "const": true
+        },
+        "allowSameBarReversal": {
+          "type": "boolean",
+          "const": false
+        },
+        "allowSignalCarry": {
+          "type": "boolean",
+          "const": false
+        }
+      }
+    },
+    "dataSafety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requireCurrentBarGreaterThanWarmup",
+        "requirePreviousDayInit",
+        "requireDailyCheckField",
+        "requireDayInitDateMatchesDate",
+        "requireCrossFrequencyReady",
+        "requireSafeIndicatorReads"
+      ],
+      "properties": {
+        "requireCurrentBarGreaterThanWarmup": {
+          "type": "boolean",
+          "const": true
+        },
+        "requirePreviousDayInit": {
+          "type": "boolean",
+          "const": true
+        },
+        "requireDailyCheckField": {
+          "type": "boolean",
+          "const": true
+        },
+        "requireDayInitDateMatchesDate": {
+          "type": "boolean",
+          "const": true
+        },
+        "requireCrossFrequencyReady": {
+          "type": "boolean",
+          "const": true
+        },
+        "requireSafeIndicatorReads": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "crossFrequency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkField",
+        "getFieldDate",
+        "requireDayRefDateEqualsDate"
+      ],
+      "properties": {
+        "checkField": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "freq"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "const": "Close"
+            },
+            "freq": {
+              "type": "string",
+              "const": "D"
+            }
+          }
+        },
+        "getFieldDate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "freq"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "const": "Close"
+            },
+            "freq": {
+              "type": "string",
+              "const": "D"
+            }
+          }
+        },
+        "requireDayRefDateEqualsDate": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "dailyAnchors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "category",
+          "lookback",
+          "freezeTiming"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "MA",
+              "EMA",
+              "DONCHIAN",
+              "ATR",
+              "CDP",
+              "NH",
+              "NL",
+              "CUSTOM"
+            ]
+          },
+          "lookback": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "freezeTiming": {
+            "type": "string",
+            "const": "ON_DAY_CHANGE"
+          }
+        }
+      }
+    },
+    "logicParity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requireC1ToC5Identity",
+        "allowOnlyC6Difference"
+      ],
+      "properties": {
+        "requireC1ToC5Identity": {
+          "type": "boolean",
+          "const": true
+        },
+        "allowOnlyC6Difference": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "indicator",
+        "trading",
+        "txtHeaderOnce",
+        "txtLineFormat"
+      ],
+      "properties": {
+        "indicator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "plot",
+            "printFile"
+          ],
+          "properties": {
+            "plot": {
+              "type": "boolean",
+              "const": true
+            },
+            "printFile": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        },
+        "trading": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "setPosition",
+            "printFile"
+          ],
+          "properties": {
+            "setPosition": {
+              "type": "boolean",
+              "const": true
+            },
+            "printFile": {
+              "type": "boolean",
+              "const": true
+            }
+          }
+        },
+        "txtHeaderOnce": {
+          "type": "boolean",
+          "const": true
+        },
+        "txtLineFormat": {
+          "type": "string",
+          "const": "YYYYMMDDhhmmss price action"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "strategyId": "txf_open_exec_bootstrap",
+  "title": "TXF Open-Execution Bootstrap",
+  "market": {
+    "symbol": "TXF",
+    "instrumentType": "TAIFEX_FUTURES",
+    "timezone": "Asia/Taipei",
+    "session": "DAY_TRADE"
+  },
+  "timeframe": {
+    "barFreq": "Min",
+    "barInterval": 1,
+    "adjusted": false
+  },
+  "history": {
+    "warmupBars": 240,
+    "sysHistDBars": 60,
+    "sysHistMBars": 2000
+  },
+  "executionModel": {
+    "decisionSource": "PREVIOUS_BAR_ONLY",
+    "executionMoment": "CURRENT_BAR_OPEN",
+    "singleExecutionPerBar": true,
+    "exitBeforeEntry": true,
+    "allowSameBarReversal": false,
+    "allowSignalCarry": false
+  },
+  "dataSafety": {
+    "requireCurrentBarGreaterThanWarmup": true,
+    "requirePreviousDayInit": true,
+    "requireDailyCheckField": true,
+    "requireDayInitDateMatchesDate": true,
+    "requireCrossFrequencyReady": true,
+    "requireSafeIndicatorReads": true
+  },
+  "crossFrequency": {
+    "checkField": {
+      "field": "Close",
+      "freq": "D"
+    },
+    "getFieldDate": {
+      "field": "Close",
+      "freq": "D"
+    },
+    "requireDayRefDateEqualsDate": true
+  },
+  "dailyAnchors": [
+    {
+      "name": "daily_atr_20",
+      "category": "ATR",
+      "lookback": 20,
+      "freezeTiming": "ON_DAY_CHANGE"
+    },
+    {
+      "name": "daily_donchian_20",
+      "category": "DONCHIAN",
+      "lookback": 20,
+      "freezeTiming": "ON_DAY_CHANGE"
+    }
+  ],
+  "logicParity": {
+    "requireC1ToC5Identity": true,
+    "allowOnlyC6Difference": true
+  },
+  "output": {
+    "indicator": {
+      "plot": true,
+      "printFile": true
+    },
+    "trading": {
+      "setPosition": true,
+      "printFile": true
+    },
+    "txtHeaderOnce": true,
+    "txtLineFormat": "YYYYMMDDhhmmss price action"
+  }
+}

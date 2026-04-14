@@ -1,0 +1,17 @@
+{
+  "artifact_id": "11504142110",
+  "artifact_status": "preview",
+  "data_signature": "bundle|sha1:11504142110",
+  "generated_at": "2026-04-14T13:10:00.000Z",
+  "generated_files": {
+    "indicator": "artifacts/11504142110/11504142110_indicator.xs",
+    "trading": "artifacts/11504142110/11504142110_trading.xs",
+    "params": "artifacts/11504142110/11504142110_params.txt",
+    "summary": "artifacts/11504142110/11504142110_summary.json"
+  },
+  "notes": [
+    "smoke test"
+  ],
+  "policy_version": "V2",
+  "source_format": "xq_m1_csv|xq_d1_csv|xq_daily_anchor_csv"
+}

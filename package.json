@@ -1,0 +1,11 @@
+{
+  "name": "xs-core-engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:data": "node scripts/validate_data_bundle.mjs",
+    "test:data": "node tests/data-validation.test.mjs",
+    "test:artifacts": "node tests/artifact-browser-store.test.mjs && node tests/artifact-repo-store.test.mjs",
+    "persist:artifact": "node scripts/persist_artifact_bundle.mjs"
+  }
+}

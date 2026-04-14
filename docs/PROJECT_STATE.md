@@ -36,6 +36,10 @@
 目前用途：
 
 - 作為本地工作台首頁
+- 已接上本地密碼門禁、前端硬化、browser-side data validation 面板
+- 已接上 browser-side artifact preview 面板
+- 已接上 browser-side artifact memory staging：`best_params / latest_memory / top10`
+- 已補 static-host security headers 設定檔 `_headers`
 - 尚未定版
 - 尚未作為正式跨電腦工作流入口
 
@@ -66,6 +70,7 @@
 - 同時讀舊 `01` 的 whitespace 資料
 - 同時讀新 XQ 匯出 CSV
 - 先做 dedupe、ts14 正規化、基本驗證
+- 已可由首頁直接呼叫做 browser-side bundle validation
 - 作為未來 JS 工作台與最佳化記憶層的底層
 
 ### 3.5 backup/01 整合分析

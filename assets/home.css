@@ -15,13 +15,31 @@
 
 body {
     margin: 0;
-    background: var(--bg);
+    background:
+        radial-gradient(circle at top left, rgba(21, 71, 52, 0.08), transparent 30%),
+        radial-gradient(circle at top right, rgba(120, 55, 28, 0.08), transparent 24%),
+        var(--bg);
     color: var(--text);
     font-family: "Microsoft JhengHei UI", "Segoe UI", sans-serif;
 }
 
+.app-shell {
+    transition: filter 180ms ease, opacity 180ms ease;
+}
+
+body.is-locked {
+    overflow: hidden;
+}
+
+body.is-locked .app-shell {
+    filter: blur(18px);
+    opacity: 0.25;
+    pointer-events: none;
+    user-select: none;
+}
+
 .page {
-    width: min(980px, calc(100% - 24px));
+    width: min(1080px, calc(100% - 24px));
     margin: 0 auto;
     padding: 28px 0 40px;
 }
@@ -35,6 +53,13 @@ body {
 
 .hero {
     padding: 28px;
+}
+
+.hero-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .brand {
@@ -75,6 +100,25 @@ h3 {
     line-height: 1.7;
 }
 
+.security-warning,
+.hero-note,
+.validator-copy {
+    margin: 12px 0 0;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.security-warning {
+    color: #7c4e0b;
+}
+
+.hero-note {
+    padding: 12px 14px;
+    border: 1px solid #ded5c8;
+    border-radius: 14px;
+    background: #fbf6ef;
+}
+
 .chooser {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -83,15 +127,15 @@ h3 {
 }
 
 .choice,
-.copy-button {
+.copy-button,
+.ghost-button,
+.action-button,
+.text-input,
+.file-input {
     appearance: none;
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--text);
-    border-radius: 16px;
-    padding: 16px 18px;
-    text-align: left;
-    cursor: pointer;
     font: inherit;
 }
 
@@ -99,6 +143,10 @@ h3 {
     display: flex;
     align-items: center;
     gap: 14px;
+    border-radius: 16px;
+    padding: 16px 18px;
+    text-align: left;
+    cursor: pointer;
 }
 
 .choice.is-active {
@@ -171,21 +219,40 @@ h3 {
     text-decoration: underline;
 }
 
-.prompt-panel {
+.prompt-panel,
+.artifact-panel {
     margin-top: 12px;
 }
 
 .prompt-head {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     margin-bottom: 12px;
 }
 
-.copy-button {
-    padding: 9px 14px;
+.copy-button,
+.ghost-button,
+.action-button {
+    padding: 10px 16px;
     border-radius: 999px;
+    min-height: 42px;
+}
+
+.ghost-button,
+.action-button {
+    cursor: pointer;
+}
+
+.ghost-button {
+    background: transparent;
+}
+
+.action-button {
+    border-color: transparent;
+    background: linear-gradient(180deg, #19543d 0%, #154734 100%);
+    color: #f4f8f6;
 }
 
 .prompt {
@@ -200,24 +267,313 @@ h3 {
     line-height: 1.7;
 }
 
+.security-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(18, 20, 19, 0.62);
+    backdrop-filter: blur(16px);
+}
+
+.security-card {
+    width: min(520px, 100%);
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 24px 60px rgba(18, 20, 19, 0.2);
+}
+
+.security-form,
+.file-grid,
+.toggle-row,
+.summary-grid,
+.issues-block {
+    margin-top: 16px;
+}
+
+.field {
+    display: grid;
+    gap: 8px;
+}
+
+.field span {
+    font-weight: 700;
+}
+
+.field small {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.text-input,
+.file-input {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.json-input {
+    width: 100%;
+    min-height: 156px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-family: "Consolas", "Courier New", monospace;
+    line-height: 1.6;
+    resize: vertical;
+}
+
+.notes-input {
+    min-height: 110px;
+    font-family: "Microsoft JhengHei UI", "Segoe UI", sans-serif;
+}
+
+.file-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.artifact-grid {
+    margin-top: 0;
+}
+
+.artifact-two-col,
+.artifact-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.security-actions {
+    margin-top: 14px;
+}
+
+.artifact-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.artifact-hint {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px dashed #d3dad5;
+    border-radius: 14px;
+    background: #f8fbf9;
+}
+
+.artifact-hint code {
+    font-family: "Consolas", "Courier New", monospace;
+}
+
+.security-status {
+    min-height: 24px;
+    margin: 12px 0 0;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.security-status.is-success {
+    color: #1f6a4d;
+}
+
+.security-status.is-warning {
+    color: #996200;
+}
+
+.security-status.is-error {
+    color: #9f2f25;
+}
+
+.security-list {
+    margin: 16px 0 0;
+    padding-left: 18px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+.toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.summary-card {
+    display: grid;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fcfcfb;
+}
+
+.summary-wide {
+    grid-column: span 2;
+}
+
+.artifact-summary-grid {
+    margin-top: 12px;
+}
+
+.summary-label {
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.summary-card strong {
+    overflow-wrap: anywhere;
+}
+
+.issue-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+}
+
+.issue-item {
+    border: 1px solid var(--line);
+    border-left-width: 4px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #fcfcfb;
+    line-height: 1.6;
+}
+
+.issue-item.is-error {
+    border-left-color: #9f2f25;
+}
+
+.issue-item.is-warning {
+    border-left-color: #996200;
+}
+
+.issue-item.is-empty,
+.issue-item.is-info {
+    border-left-color: #90948f;
+    color: var(--muted);
+}
+
+.issue-code {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.preview-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.memory-block {
+    margin-top: 16px;
+}
+
+.memory-top10-card {
+    grid-column: span 2;
+}
+
+.preview-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 16px 0;
+}
+
+.prompt-compact {
+    min-height: 220px;
+    margin-top: 12px;
+    border-radius: 0 0 13px 13px;
+}
+
+.choice:hover,
+.ghost-button:hover,
+.action-button:hover {
+    transform: translateY(-1px);
+}
+
+.text-input:focus,
+.file-input:focus,
+.json-input:focus,
+.choice:focus,
+.ghost-button:focus,
+.action-button:focus {
+    outline: 2px solid rgba(21, 71, 52, 0.2);
+    outline-offset: 2px;
+}
+
+.ghost-button:disabled,
+.action-button:disabled {
+    opacity: 0.56;
+    cursor: not-allowed;
+    transform: none;
+}
+
 @media (max-width: 760px) {
     .chooser,
-    .grid {
+    .grid,
+    .file-grid,
+    .summary-grid,
+    .artifact-two-col,
+    .artifact-preview-grid {
         grid-template-columns: 1fr;
+    }
+
+    .summary-wide {
+        grid-column: span 1;
+    }
+
+    .memory-top10-card {
+        grid-column: span 1;
     }
 }
 
 @media (max-width: 560px) {
     .page {
-        width: min(100% - 16px, 980px);
+        width: min(100% - 16px, 1080px);
         padding-top: 16px;
         padding-bottom: 24px;
     }
 
     .hero,
-    .workspace {
+    .workspace,
+    .security-card {
         border-radius: 16px;
         padding: 18px;
+    }
+
+    .hero-top,
+    .prompt-head {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     h1 {

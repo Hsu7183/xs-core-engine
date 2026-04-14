@@ -3,77 +3,283 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
     <title>xs-core-engine</title>
-    <link rel="stylesheet" href="assets/home.css">
+    <link rel="stylesheet" href="assets/gate.css?v=20260415c">
+    <script src="assets/gate-standalone.js?v=20260415c" defer></script>
+    <script src="assets/home-code-output.js?v=20260415c" defer></script>
 </head>
-<body>
-    <main class="page">
-        <header class="hero">
-            <p class="brand">xs-core-engine</p>
-            <h1>XS Strategy Workbench</h1>
-            <p class="lead">
-                Choose the workflow first, then continue with the matching XS task.
-            </p>
+<body class="is-locked">
+    <div class="gate-layer" id="gate-layer" role="dialog" aria-modal="true" aria-label="密碼視窗">
+        <form id="unlock-form" class="gate-card" action="javascript:void(0)" autocomplete="off" novalidate>
+            <input
+                id="unlock-password"
+                class="gate-input"
+                name="password"
+                type="password"
+                placeholder="密碼"
+                aria-label="密碼"
+                autocomplete="current-password"
+                autocapitalize="off"
+                spellcheck="false"
+                required
+            >
+            <button id="unlock-submit" class="gate-button" type="submit">確定</button>
+            <p id="unlock-status" class="gate-status" aria-live="polite"></p>
+        </form>
+    </div>
+
+    <main id="workspace" class="workspace" hidden inert>
+        <header class="workspace-head">
+            <p class="workspace-kicker">已解鎖</p>
+            <button id="lock-workspace" class="lock-button" type="button">上鎖</button>
         </header>
 
-        <section class="chooser" aria-label="workflow chooser">
-            <button class="choice is-active" data-workflow="best" type="button">
-                <span class="choice-index">01</span>
-                <span class="choice-text">Best Return Pair</span>
+        <section class="mode-grid" aria-label="模式選單">
+            <button class="mode-card mode-button is-active" data-mode="best" type="button">
+                <span class="mode-index">01</span>
+                <h2>最佳報酬配對</h2>
+                <p>顯示歷史最佳績效，並輸出指標版與交易版。</p>
             </button>
-            <button class="choice" data-workflow="new" type="button">
-                <span class="choice-index">02</span>
-                <span class="choice-text">New Strategy Pair</span>
+
+            <button class="mode-card mode-button" data-mode="new" type="button">
+                <span class="mode-index">02</span>
+                <h2>新策略配對</h2>
+                <p>每次點選都重新建立一組新的 paired XS。</p>
             </button>
-            <button class="choice" data-workflow="refactor" type="button">
-                <span class="choice-index">03</span>
-                <span class="choice-text">Refactor Old XS</span>
+
+            <button class="mode-card mode-button" data-mode="refactor" type="button">
+                <span class="mode-index">03</span>
+                <h2>重構舊 XS</h2>
+                <p>上傳舊版後，依 V2 規範重寫成新的指標版與交易版。</p>
             </button>
-            <button class="choice" data-workflow="export" type="button">
-                <span class="choice-index">04</span>
-                <span class="choice-text">Export XQ Data Scripts</span>
+
+            <button class="mode-card mode-button" data-mode="export" type="button">
+                <span class="mode-index">04</span>
+                <h2>匯出 XQ 資料腳本</h2>
+                <p>只顯示 M1、D1、DA 三份匯出腳本。</p>
             </button>
         </section>
 
-        <section class="workspace">
-            <div class="workspace-head">
-                <p class="tag" id="workflow-tag">Best Return</p>
-                <h2 id="workflow-title">Output the indicator and trading pair for the best-return strategy</h2>
-                <p class="description" id="workflow-description"></p>
-            </div>
-
-            <div class="grid">
-                <article class="panel">
-                    <h3>You prepare</h3>
-                    <ul id="workflow-inputs" class="list"></ul>
-                </article>
-
-                <article class="panel">
-                    <h3>I output</h3>
-                    <ul id="workflow-outputs" class="list"></ul>
-                </article>
-
-                <article class="panel">
-                    <h3>Key rules</h3>
-                    <ul id="workflow-rules" class="list"></ul>
-                </article>
-
-                <article class="panel">
-                    <h3>Main files</h3>
-                    <ul id="workflow-files" class="list links"></ul>
-                </article>
-            </div>
-
-            <article class="panel prompt-panel">
-                <div class="prompt-head">
-                    <h3>Prompt for Codex</h3>
-                    <button id="copy-prompt" class="copy-button" type="button">Copy</button>
+        <section id="best-metrics-panel" class="metrics-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">歷史最佳</p>
+                    <h2 class="panel-title">最佳報酬配對</h2>
                 </div>
-                <pre id="workflow-prompt" class="prompt"></pre>
-            </article>
+            </div>
+
+            <div class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">總報酬率</span>
+                    <strong id="metric-total-return" class="metric-value"></strong>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">最大回撤</span>
+                    <strong id="metric-max-drawdown" class="metric-value"></strong>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">交易數</span>
+                    <strong id="metric-trade-count" class="metric-value"></strong>
+                </article>
+            </div>
+
+            <div class="annual-panel">
+                <span class="metric-label">近六年每年報酬率</span>
+                <div id="annual-return-list" class="annual-list"></div>
+            </div>
+        </section>
+
+        <section id="best-upload-panel" class="upload-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">更新與驗證</p>
+                    <h2 class="panel-title">上傳策略、資料庫與 XQ 交易明細</h2>
+                </div>
+                <button id="apply-best-upload" class="action-button" type="button">更新並比對</button>
+            </div>
+
+            <div class="upload-grid">
+                <label class="upload-card">
+                    <span class="upload-label">目前最佳指標版</span>
+                    <input id="best-indicator-upload" type="file" accept=".txt,.xs">
+                </label>
+                <label class="upload-card">
+                    <span class="upload-label">目前最佳交易版</span>
+                    <input id="best-trading-upload" type="file" accept=".txt,.xs">
+                </label>
+                <label class="upload-card">
+                    <span class="upload-label">M1 資料庫</span>
+                    <input id="best-m1-upload" type="file" accept=".txt,.csv">
+                </label>
+                <label class="upload-card">
+                    <span class="upload-label">D1 資料庫</span>
+                    <input id="best-d1-upload" type="file" accept=".txt,.csv">
+                </label>
+                <label class="upload-card">
+                    <span class="upload-label">XQ TXT 交易明細</span>
+                    <input id="best-xqtxt-upload" type="file" accept=".txt">
+                </label>
+            </div>
+
+            <div class="setting-grid">
+                <label class="setting-card">
+                    <span class="upload-label">本金</span>
+                    <input id="best-capital" class="setting-input" type="number" min="1" step="1" value="1000000">
+                </label>
+                <label class="setting-card">
+                    <span class="upload-label">每點價值</span>
+                    <input id="best-point-value" class="setting-input" type="number" min="1" step="1" value="200">
+                </label>
+                <label class="setting-card">
+                    <span class="upload-label">每邊成本點數</span>
+                    <input id="best-side-cost" class="setting-input" type="number" min="0" step="0.1" value="2">
+                </label>
+            </div>
+
+            <p class="helper-text">DA 不用上傳，系統會依 D1 自動推導。</p>
+            <p id="best-upload-status" class="helper-text" aria-live="polite"></p>
+        </section>
+
+        <section id="best-compare-panel" class="metrics-panel">
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">回放比對</p>
+                    <h2 class="panel-title">M1 / D1（自動推導 DA）與 XQ TXT 一致性</h2>
+                </div>
+            </div>
+
+            <div class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">驗證狀態</span>
+                    <strong id="compare-status-value" class="metric-value">待驗證</strong>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">模擬事件數</span>
+                    <strong id="compare-sim-count" class="metric-value">-</strong>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">XQ 事件數</span>
+                    <strong id="compare-xq-count" class="metric-value">-</strong>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">吻合前綴數</span>
+                    <strong id="compare-prefix-count" class="metric-value">-</strong>
+                </article>
+            </div>
+
+            <div class="compare-detail-grid">
+                <article class="annual-panel">
+                    <span class="metric-label">參數與資料狀態</span>
+                    <p id="compare-param-note" class="helper-text helper-compact"></p>
+                </article>
+                <article class="annual-panel">
+                    <span class="metric-label">第一個差異</span>
+                    <p id="compare-first-mismatch" class="helper-text helper-compact"></p>
+                </article>
+            </div>
+
+            <div class="annual-panel">
+                <span class="metric-label">摘要</span>
+                <p id="compare-note" class="helper-text helper-compact"></p>
+            </div>
+        </section>
+
+        <section id="refactor-upload-panel" class="upload-panel" hidden>
+            <div class="panel-head">
+                <div>
+                    <p class="panel-kicker">重構輸入</p>
+                    <h2 class="panel-title">上傳舊指標版或交易版</h2>
+                </div>
+                <button id="run-refactor" class="action-button" type="button">重寫輸出</button>
+            </div>
+
+            <div class="upload-grid">
+                <label class="upload-card">
+                    <span class="upload-label">舊指標版</span>
+                    <input id="refactor-indicator-upload" type="file" accept=".txt,.xs">
+                </label>
+                <label class="upload-card">
+                    <span class="upload-label">舊交易版</span>
+                    <input id="refactor-trading-upload" type="file" accept=".txt,.xs">
+                </label>
+            </div>
+
+            <p id="refactor-status" class="helper-text" aria-live="polite"></p>
+        </section>
+
+        <section id="output-panel" class="output-panel">
+            <div class="output-head">
+                <div>
+                    <p id="output-kicker" class="output-kicker"></p>
+                    <h2 id="output-title" class="output-title"></h2>
+                    <p id="output-file-base" class="output-filename"></p>
+                </div>
+            </div>
+
+            <div id="pair-output" class="code-grid">
+                <article class="code-card">
+                    <div class="code-toolbar">
+                        <div class="code-title-block">
+                            <h3>指標版</h3>
+                            <p id="indicator-filename" class="code-filename"></p>
+                        </div>
+                        <button id="copy-indicator" class="copy-button" type="button">複製</button>
+                    </div>
+                    <textarea id="indicator-output" class="code-textarea" readonly></textarea>
+                </article>
+
+                <article class="code-card">
+                    <div class="code-toolbar">
+                        <div class="code-title-block">
+                            <h3>交易版</h3>
+                            <p id="trading-filename" class="code-filename"></p>
+                        </div>
+                        <button id="copy-trading" class="copy-button" type="button">複製</button>
+                    </div>
+                    <textarea id="trading-output" class="code-textarea" readonly></textarea>
+                </article>
+            </div>
+
+            <div id="export-output" class="code-grid export-grid" hidden>
+                <article class="code-card">
+                    <div class="code-toolbar">
+                        <div class="code-title-block">
+                            <h3>M1</h3>
+                            <p id="export-m1-filename" class="code-filename"></p>
+                        </div>
+                        <button id="copy-export-m1" class="copy-button" type="button">複製</button>
+                    </div>
+                    <textarea id="export-m1-output" class="code-textarea export-textarea" readonly></textarea>
+                </article>
+
+                <article class="code-card">
+                    <div class="code-toolbar">
+                        <div class="code-title-block">
+                            <h3>D1</h3>
+                            <p id="export-d1-filename" class="code-filename"></p>
+                        </div>
+                        <button id="copy-export-d1" class="copy-button" type="button">複製</button>
+                    </div>
+                    <textarea id="export-d1-output" class="code-textarea export-textarea" readonly></textarea>
+                </article>
+
+                <article class="code-card">
+                    <div class="code-toolbar">
+                        <div class="code-title-block">
+                            <h3>DA</h3>
+                            <p id="export-daily-anchor-filename" class="code-filename"></p>
+                        </div>
+                        <button id="copy-export-daily-anchor" class="copy-button" type="button">複製</button>
+                    </div>
+                    <textarea id="export-daily-anchor-output" class="code-textarea export-textarea" readonly></textarea>
+                </article>
+            </div>
         </section>
     </main>
-
-    <script src="assets/home.js"></script>
 </body>
 </html>

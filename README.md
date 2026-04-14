@@ -40,6 +40,7 @@ This repository is not a generic code generator. It is a contract-driven engine 
 |   |-- artifacts/
 |   |   |-- index.js
 |   |   |-- naming.js
+|   |   |-- repo-store.js
 |   |   `-- store.js
 |   `-- data/
 |       |-- csv-loader.js
@@ -59,6 +60,7 @@ This repository is not a generic code generator. It is a contract-driven engine 
 |   |-- data_ready_check.py
 |   `-- lookahead_check.py
 `-- scripts/
+    |-- persist_artifact_bundle.mjs
     `-- verify_xs_pair.py
 ```
 
@@ -80,10 +82,12 @@ This repository is not a generic code generator. It is a contract-driven engine 
 - `templates/exporters/*.xs` are XQ-side data export scripts for M1, D1, and daily anchor data.
 - `src/data/*.js` is the JavaScript data compatibility layer for legacy `01` inputs and new XQ CSV exports.
 - `src/artifacts/*.js` is the JavaScript artifact memory layer for artifact ids, file naming, summaries, best params, and leaderboard snapshots.
+- `src/artifacts/repo-store.js` is the Node-side bridge that writes browser-exported bundle snapshots into repo-backed artifact memory files.
 - `validators/lookahead_check.py` checks that trading logic does not use unsafe current-bar OHLCV references.
 - `validators/data_ready_check.py` checks required guardrails and enforces `C1~C5` parity.
 - `.github/workflows/spec-guard.yml` runs the new validators on every push and pull request.
 - `templates/xs/*.template.xs` and `scripts/verify_xs_pair.py` remain in the repo as earlier bootstrap scaffolding.
+- `scripts/persist_artifact_bundle.mjs` persists a downloaded artifact bundle snapshot into `artifacts/<artifact_id>/` and `artifacts/_memory/`.
 
 ## Current assumptions
 

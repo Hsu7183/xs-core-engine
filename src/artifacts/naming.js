@@ -1,4 +1,5 @@
 export const DEFAULT_ARTIFACT_DIR = "artifacts";
+export const DEFAULT_MEMORY_DIRNAME = "_memory";
 
 function pad(value, length) {
     return String(value ?? "").padStart(length, "0");
@@ -72,5 +73,20 @@ export function buildArtifactPaths(artifactId, { baseDir = DEFAULT_ARTIFACT_DIR 
         top10JsonPath: `${directory}/${files.top10Json}`,
         top10CsvPath: `${directory}/${files.top10Csv}`,
         tradeLinesPath: `${directory}/${files.tradeLines}`,
+    };
+}
+
+export function buildArtifactMemoryPaths({
+    baseDir = DEFAULT_ARTIFACT_DIR,
+    memoryDirName = DEFAULT_MEMORY_DIRNAME,
+} = {}) {
+    const directory = `${baseDir}/${memoryDirName}`;
+
+    return {
+        directory,
+        bestParamsPath: `${directory}/best_params.json`,
+        latestMemoryPath: `${directory}/latest_memory.json`,
+        top10JsonPath: `${directory}/top10.json`,
+        top10CsvPath: `${directory}/top10.csv`,
     };
 }

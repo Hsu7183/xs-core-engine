@@ -1,0 +1,21 @@
+{
+  "artifact_id": "11504142110",
+  "best_params": {
+    "FastLen": 20,
+    "SlowLen": 55
+  },
+  "data_signature": "bundle|sha1:11504142110",
+  "generated_at": "2026-04-14T13:10:00.000Z",
+  "indicator_xs_path": "artifacts/11504142110/11504142110_indicator.xs",
+  "metrics": {
+    "mdd_pct": -4.1,
+    "n_trades": 88,
+    "total_return": 13.2
+  },
+  "params_txt_path": "artifacts/11504142110/11504142110_params.txt",
+  "policy_version": "V2",
+  "source_strategy_path": "references/smoke_strategy.xs",
+  "strategy_family": "0313plus",
+  "strategy_name": "smoke_strategy",
+  "trading_xs_path": "artifacts/11504142110/11504142110_trading.xs"
+}

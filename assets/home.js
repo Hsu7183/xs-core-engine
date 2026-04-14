@@ -1,26 +1,29 @@
+import { setupValidationPanel } from "./validator.js";
+import { setupArtifactPreviewPanel } from "./artifacts-ui.js";
+
 const workflows = {
     best: {
-        tag: "Best Return",
-        title: "Output the indicator and trading pair for the best-return strategy",
+        tag: "最佳報酬配對",
+        title: "輸出最佳報酬策略的指標版與交易版配對",
         description:
-            "Use validated M1, D1, DailyAnchor, and optimization memory to output the V2-compliant XS pair for the best-return strategy.",
+            "使用已驗證的 M1、D1、DailyAnchor 與最佳化記憶，輸出符合 V2 的 XS 成對結果。",
         inputs: [
-            "Validated M1, D1, and DailyAnchor data",
-            "Best params or optimization memory",
-            "Strategy family or strategy name",
-            "Data signature and policy version",
+            "已驗證的 M1、D1、DailyAnchor 資料",
+            "最佳參數或最佳化記憶",
+            "策略家族或策略名稱",
+            "資料簽章與 policy 版本",
         ],
         outputs: [
-            "indicator.xs for the best-return strategy",
-            "matching trading.xs with the same C1-C5 core",
-            "params.txt header string",
-            "summary.json and artifact meta",
+            "最佳報酬策略的 indicator.xs",
+            "與其共用相同 C1~C5 核心的 trading.xs",
+            "params.txt 標頭字串",
+            "summary.json 與 artifact meta",
         ],
         rules: [
-            "Validate data before generating code",
-            "Keep C1-C5 identical and allow differences in C6 only",
-            "Use ROC date-time artifact naming",
-            "Store outputs in a GitHub-readable artifact structure",
+            "先驗資料，再生成程式",
+            "指標版與交易版必須 C1~C5 完全一致，只有 C6 可不同",
+            "使用民國年月日時分 artifact 命名",
+            "輸出必須落在 GitHub 可讀的 artifact 結構中",
         ],
         files: [
             { label: "docs/ARTIFACT_SCHEMA.md", href: "docs/ARTIFACT_SCHEMA.md" },
@@ -28,35 +31,35 @@ const workflows = {
             { label: "src/artifacts/store.js", href: "src/artifacts/store.js" },
         ],
         prompt:
-            "Use docs/HIGHEST_SPEC_V2.md and the validated M1, D1, DailyAnchor, and optimization memory to output the best-return indicator.xs and trading.xs.\\n" +
-            "Requirements:\\n" +
-            "1. Check data signature and policy version first.\\n" +
-            "2. Apply the best params.\\n" +
-            "3. Keep C1-C5 identical across both outputs.\\n" +
-            "4. Use ROC date-time artifact naming.",
+            "請依 docs/HIGHEST_SPEC_V2.md，使用已驗證的 M1、D1、DailyAnchor 與最佳化記憶，輸出最佳報酬策略的 indicator.xs 與 trading.xs。\\n" +
+            "要求：\\n" +
+            "1. 先檢查 data signature 與 policy version。\\n" +
+            "2. 套用 best params。\\n" +
+            "3. 兩個輸出必須維持 C1~C5 完全一致。\\n" +
+            "4. 使用民國年月日時分 artifact 命名。",
     },
     new: {
-        tag: "New Strategy",
-        title: "Output the indicator and trading pair for a new strategy",
+        tag: "新策略配對",
+        title: "把新策略想法轉成指標版與交易版配對",
         description:
-            "Turn a new strategy idea into a V2-compliant indicator.xs and trading.xs pair. The trading version may change C6 only.",
+            "把新策略邏輯整理成符合 V2 的 indicator.xs 與 trading.xs；交易版只能在 C6 有差異。",
         inputs: [
-            "Direction: long-only, short-only, or bi-directional",
-            "Entry, exit, filter, and risk-control rules",
-            "Requested indicators such as ATR, VWAP, or Donchian",
-            "TXT output requirements if needed",
+            "方向設定：只做多、只做空、或雙向",
+            "進場、出場、過濾、風控規則",
+            "指定指標，例如 ATR、VWAP、Donchian",
+            "若需要，提供 TXT 輸出需求",
         ],
         outputs: [
-            "V2-compliant indicator.xs",
-            "V2-compliant trading.xs",
-            "strategy exception notes if needed",
-            "auditable named conditions and output format",
+            "符合 V2 的 indicator.xs",
+            "符合 V2 的 trading.xs",
+            "必要時的策略例外說明",
+            "可稽核的命名條件與輸出格式",
         ],
         rules: [
-            "Use anchored previous-bar data for formal decisions",
-            "Use current-bar open only for trigger and execution",
-            "Block future values, floating values, and same-bar double execution",
-            "Keep TXT output as one full string with a single Print argument",
+            "正式決策只能使用前一根或更早的定錨資料",
+            "當根只允許拿來做觸發與執行價",
+            "禁止未來值、浮動值、同棒雙重執行",
+            "TXT 輸出必須先組完整字串，再只呼叫一次 Print",
         ],
         files: [
             { label: "docs/HIGHEST_SPEC_V2.md", href: "docs/HIGHEST_SPEC_V2.md" },
@@ -64,35 +67,35 @@ const workflows = {
             { label: "templates/base_trading.xs", href: "templates/base_trading.xs" },
         ],
         prompt:
-            "Use docs/HIGHEST_SPEC_V2.md to turn my new strategy logic into indicator.xs and trading.xs.\\n" +
-            "Requirements:\\n" +
-            "1. Build the shared C1-C5 core first.\\n" +
-            "2. Use only previous-bar or older anchored data for formal trading decisions.\\n" +
-            "3. Use the current-bar open only for trigger and execution.\\n" +
-            "4. Keep trading.xs different in C6 only.",
+            "請依 docs/HIGHEST_SPEC_V2.md，把我的新策略邏輯整理成 indicator.xs 與 trading.xs。\\n" +
+            "要求：\\n" +
+            "1. 先建立共用的 C1~C5 核心。\\n" +
+            "2. 正式交易判斷只能用前一根或更早的定錨資料。\\n" +
+            "3. 當根 open 只能拿來做觸發與執行。\\n" +
+            "4. trading.xs 只能在 C6 與 indicator.xs 不同。",
     },
     refactor: {
-        tag: "Refactor Old XS",
-        title: "Upload old XS and rewrite it into a compliant indicator and trading pair",
+        tag: "重構舊 XS",
+        title: "上傳舊 XS，重寫成合規的指標版與交易版配對",
         description:
-            "Audit old indicator or trading XS first, then rewrite it into a V2-compliant pair without preserving invalid legacy behavior.",
+            "先審視舊的 indicator 或 trading XS，再重寫成符合 V2 的成對版本，不保留不合法的舊行為。",
         inputs: [
-            "Old indicator.xs or trading.xs source code",
-            "Direction and logic that must be preserved",
-            "Whether to keep the old params, exits, and TXT format",
-            "Any explicit strategy exception notes",
+            "舊 indicator.xs 或 trading.xs 原始碼",
+            "必須保留的方向與邏輯",
+            "是否保留舊參數、出場、TXT 格式",
+            "任何明確的策略例外說明",
         ],
         outputs: [
-            "V2-compliant indicator.xs",
-            "V2-compliant trading.xs",
-            "summary of rule violations in the old code",
-            "rewritten core conditions in named form",
+            "符合 V2 的 indicator.xs",
+            "符合 V2 的 trading.xs",
+            "舊碼違規點摘要",
+            "重寫後的命名核心條件",
         ],
         rules: [
-            "Old strategy code is reference only, never law",
-            "Rewrite same-bar, floating-value, and unsafe-read patterns",
-            "Document strategy exceptions when needed",
-            "End with a shared C1-C5 core and separate C6 output layers",
+            "舊策略程式只能參考，不能當法源",
+            "必須改寫同棒、浮動值與不安全讀值模式",
+            "有策略例外時要明確寫出",
+            "最終結果必須是共用 C1~C5、分離 C6 的配對結構",
         ],
         files: [
             { label: "docs/BACKUP_01_INTEGRATION.md", href: "docs/BACKUP_01_INTEGRATION.md" },
@@ -100,35 +103,35 @@ const workflows = {
             { label: "docs/START_HERE.md", href: "docs/START_HERE.md" },
         ],
         prompt:
-            "Audit the old XS code against docs/HIGHEST_SPEC_V2.md, list the violations, then rewrite it into indicator.xs and trading.xs.\\n" +
-            "Requirements:\\n" +
-            "1. Old code is reference only.\\n" +
-            "2. Formal trading decisions must use previous-bar anchored data.\\n" +
-            "3. trading.xs may change the output layer only.\\n" +
-            "4. Document strategy exceptions if they exist.",
+            "請先依 docs/HIGHEST_SPEC_V2.md 審核這份舊 XS，列出違規點，再重寫成 indicator.xs 與 trading.xs。\\n" +
+            "要求：\\n" +
+            "1. 舊碼只能參考，不能直接沿用。\\n" +
+            "2. 正式交易判斷必須使用前一根定錨資料。\\n" +
+            "3. trading.xs 只能改輸出層。\\n" +
+            "4. 若有策略例外請明確記錄。",
     },
     export: {
-        tag: "XQ Export",
-        title: "Output XQ Print scripts for M1, D1, and related database feeds",
+        tag: "XQ 匯出",
+        title: "輸出 XQ 用的 M1、D1 與資料匯出腳本",
         description:
-            "Generate XS export scripts that can run on XQ and Print stable M1, D1, and DailyAnchor data before those rows enter your database.",
+            "產生可在 XQ 執行的 XS 匯出腳本，在資料進入資料庫之前先穩定輸出 M1、D1、DailyAnchor。",
         inputs: [
-            "Which feeds to export: M1, D1, DailyAnchor",
-            "Where each script runs inside XQ",
-            "TXT path and file naming rules",
-            "Legacy 01 format or new CSV format",
+            "要匯出的資料：M1、D1、DailyAnchor",
+            "每支腳本在 XQ 哪個圖表頻率執行",
+            "TXT 路徑與檔名規則",
+            "legacy 01 格式或新的 CSV 格式",
         ],
         outputs: [
-            "M1 export XS script for XQ",
-            "D1 export XS script for XQ",
-            "DailyAnchor export XS script for XQ",
-            "notes for database import and validation",
+            "XQ 用 M1 匯出 XS",
+            "XQ 用 D1 匯出 XS",
+            "XQ 用 DailyAnchor 匯出 XS",
+            "資料入庫與驗證說明",
         ],
         rules: [
-            "Export first, validate second, store third, then optimize and generate strategies",
-            "Use a format that the JS data layer can validate",
-            "Normalize ts14 and check duplicate and bad-price rows",
-            "Do not place large raw datasets directly into the main GitHub repo",
+            "流程順序必須是：先匯出、再驗證、再存放、最後最佳化與生成策略",
+            "匯出格式必須能被 JS 資料層驗證",
+            "要正規化 ts14，並檢查重複列與壞價格列",
+            "不要把大型原始資料直接放進主 GitHub repo",
         ],
         files: [
             { label: "docs/DATA_PIPELINE.md", href: "docs/DATA_PIPELINE.md" },
@@ -136,12 +139,12 @@ const workflows = {
             { label: "templates/exporters/d1_export.xs", href: "templates/exporters/d1_export.xs" },
         ],
         prompt:
-            "Generate XS export scripts for XQ that Print M1, D1, and DailyAnchor data.\\n" +
-            "Requirements:\\n" +
-            "1. State which chart frequency each script must run on.\\n" +
-            "2. Use an export format that the JS data layer can validate.\\n" +
-            "3. Build one full output string before calling Print.\\n" +
-            "4. Explain which database table each export belongs to.",
+            "請產生可在 XQ 執行、用來輸出 M1、D1、DailyAnchor 的 XS 匯出腳本。\\n" +
+            "要求：\\n" +
+            "1. 明確說明每支腳本要跑在哪個圖表頻率。\\n" +
+            "2. 匯出格式必須能被 JS 資料層驗證。\\n" +
+            "3. 呼叫 Print 前要先組完整輸出字串。\\n" +
+            "4. 說明每種匯出對應哪個資料表。",
     },
 };
 
@@ -204,14 +207,16 @@ choices.forEach((choice) => {
 copyButton.addEventListener("click", async () => {
     try {
         await navigator.clipboard.writeText(promptEl.textContent);
-        copyButton.textContent = "Copied";
+        copyButton.textContent = "已複製";
     } catch {
-        copyButton.textContent = "Failed";
+        copyButton.textContent = "複製失敗";
     }
 
     setTimeout(() => {
-        copyButton.textContent = "Copy";
+        copyButton.textContent = "複製";
     }, 1200);
 });
 
+setupValidationPanel();
+setupArtifactPreviewPanel();
 setWorkflow("best");

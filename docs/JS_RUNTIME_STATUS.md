@@ -36,28 +36,33 @@ Current responsibilities:
 - `src/artifacts/naming.js`
 - `src/artifacts/store.js`
 - `src/artifacts/index.js`
+- `src/artifacts/browser-store.js`
+- `src/artifacts/repo-store.js`
 
 Current responsibilities:
 
 - build ROC-year artifact ids such as `11504141455`
 - build canonical artifact filenames and artifact directory paths
+- build canonical repo-backed memory paths under `artifacts/_memory`
 - serialize `params.txt` header lines as `key=value,key=value`
 - build `summary.json`
 - build `artifact_meta.json`
 - build `best_params`, `latest_memory`, and `top10` rows
+- persist browser-side staging memory for `best_params`, `latest_memory`, and `top10`
+- persist bundle snapshots into repo-backed artifact files and formal memory files
 
 ## Current gaps
 
-- no browser UI wiring yet
+- homepage wiring exists for browser-side data validation, artifact preview, browser-side memory staging, downloaded bundle snapshots, and a local password gate
 - no end-to-end renderer yet
-- no formal persistence adapter yet
-- no browser runtime tests in this workspace
+- no direct browser-to-GitHub push path yet; current bridge is browser snapshot download plus repo-side persist script
+- no browser E2E tests in this workspace
 
 ## Immediate next step
 
 Wire the homepage and future generator UI to:
 
-1. parse uploaded legacy or XQ-exported data
-2. validate and dedupe before generation
-3. create artifact ids and summary records
+1. keep the homepage validator aligned with `src/data`
+2. keep browser-side memory staging aligned with `src/artifacts`
+3. connect staged memory to commit/push workflow for GitHub-backed artifact persistence
 4. prepare the data needed for the V2 renderer

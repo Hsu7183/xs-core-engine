@@ -158,6 +158,14 @@
 
 不建議把大量原始 `M1/D1` 直接丟進主 repo。
 
+目前 repo-backed 正式記憶層的 canonical 路徑為：
+
+- `artifacts/<artifact_id>/`
+- `artifacts/_memory/best_params.json`
+- `artifacts/_memory/latest_memory.json`
+- `artifacts/_memory/top10.json`
+- `artifacts/_memory/top10.csv`
+
 ## 9. 與 V2 規範的關係
 
 artifact schema 不能獨立於 V2。

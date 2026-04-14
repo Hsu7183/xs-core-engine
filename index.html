@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>xs-core-engine</title>
+    <link rel="stylesheet" href="assets/home.css">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <p class="brand">xs-core-engine</p>
+            <h1>XS Strategy Workbench</h1>
+            <p class="lead">
+                Choose the workflow first, then continue with the matching XS task.
+            </p>
+        </header>
+
+        <section class="chooser" aria-label="workflow chooser">
+            <button class="choice is-active" data-workflow="best" type="button">
+                <span class="choice-index">01</span>
+                <span class="choice-text">Best Return Pair</span>
+            </button>
+            <button class="choice" data-workflow="new" type="button">
+                <span class="choice-index">02</span>
+                <span class="choice-text">New Strategy Pair</span>
+            </button>
+            <button class="choice" data-workflow="refactor" type="button">
+                <span class="choice-index">03</span>
+                <span class="choice-text">Refactor Old XS</span>
+            </button>
+            <button class="choice" data-workflow="export" type="button">
+                <span class="choice-index">04</span>
+                <span class="choice-text">Export XQ Data Scripts</span>
+            </button>
+        </section>
+
+        <section class="workspace">
+            <div class="workspace-head">
+                <p class="tag" id="workflow-tag">Best Return</p>
+                <h2 id="workflow-title">Output the indicator and trading pair for the best-return strategy</h2>
+                <p class="description" id="workflow-description"></p>
+            </div>
+
+            <div class="grid">
+                <article class="panel">
+                    <h3>You prepare</h3>
+                    <ul id="workflow-inputs" class="list"></ul>
+                </article>
+
+                <article class="panel">
+                    <h3>I output</h3>
+                    <ul id="workflow-outputs" class="list"></ul>
+                </article>
+
+                <article class="panel">
+                    <h3>Key rules</h3>
+                    <ul id="workflow-rules" class="list"></ul>
+                </article>
+
+                <article class="panel">
+                    <h3>Main files</h3>
+                    <ul id="workflow-files" class="list links"></ul>
+                </article>
+            </div>
+
+            <article class="panel prompt-panel">
+                <div class="prompt-head">
+                    <h3>Prompt for Codex</h3>
+                    <button id="copy-prompt" class="copy-button" type="button">Copy</button>
+                </div>
+                <pre id="workflow-prompt" class="prompt"></pre>
+            </article>
+        </section>
+    </main>
+
+    <script src="assets/home.js"></script>
+</body>
+</html>

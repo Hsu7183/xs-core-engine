@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  verify-xs-pair:
+  validate-templates:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,8 +17,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify indicator and trading parity
-        run: >
-          python scripts/verify_xs_pair.py
-          --indicator templates/xs/indicator.template.xs
-          --trading templates/xs/trading.template.xs
+      - name: Check lookahead rules
+        run: python validators/lookahead_check.py
+
+      - name: Check data-ready and parity rules
+        run: python validators/data_ready_check.py

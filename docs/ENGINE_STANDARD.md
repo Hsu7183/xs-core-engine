@@ -1,6 +1,8 @@
 # XS Core Engine Standard
 
-This document is the normative standard for `xs-core-engine`.
+This document is the working engineering summary for `xs-core-engine`.
+
+The canonical highest spec is [`docs/HIGHEST_SPEC_V2.md`](./HIGHEST_SPEC_V2.md). If this file and the highest spec ever disagree, the highest spec wins.
 
 ## 1. Purpose
 

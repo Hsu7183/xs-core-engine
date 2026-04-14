@@ -32,24 +32,33 @@ This repository is not a generic code generator. It is a contract-driven engine 
 |   `-- ENGINE_STANDARD.md
 |-- references/
 |   `-- README.md
-|-- scripts/
-|   `-- verify_xs_pair.py
 |-- specs/
 |   |-- examples/txf-open-exec.example.json
 |   `-- strategy-spec.schema.json
-`-- templates/xs/
-    |-- indicator.template.xs
-    `-- trading.template.xs
+|-- templates/
+|   |-- base_indicator.xs
+|   |-- base_trading.xs
+|   `-- xs/
+|       |-- indicator.template.xs
+|       `-- trading.template.xs
+|-- validators/
+|   |-- data_ready_check.py
+|   `-- lookahead_check.py
+`-- scripts/
+    `-- verify_xs_pair.py
 ```
 
 ## Bootstrap contents
 
+- `docs/HIGHEST_SPEC_V2.md` is the canonical highest spec and supersedes older strategy habits.
 - `docs/ENGINE_STANDARD.md` is the repository source of truth for runtime and safety rules.
 - `docs/ARCHITECTURE.md` describes the contract between spec, safety layer, core logic layer, and output layer.
 - `specs/strategy-spec.schema.json` defines the machine-readable strategy contract.
-- `templates/xs/*.template.xs` provide paired indicator and trading shells with identical C1-C5 sections.
-- `scripts/verify_xs_pair.py` enforces the pair contract and checks required safety snippets.
-- `.github/workflows/spec-guard.yml` runs the verifier on every push and pull request.
+- `templates/base_indicator.xs` and `templates/base_trading.xs` are the current canonical paired templates.
+- `validators/lookahead_check.py` checks that trading logic does not use unsafe current-bar OHLCV references.
+- `validators/data_ready_check.py` checks required guardrails and enforces `C1~C5` parity.
+- `.github/workflows/spec-guard.yml` runs the new validators on every push and pull request.
+- `templates/xs/*.template.xs` and `scripts/verify_xs_pair.py` remain in the repo as earlier bootstrap scaffolding.
 
 ## Current assumptions
 

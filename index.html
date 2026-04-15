@@ -9,26 +9,60 @@
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
     <title>xs-core-engine</title>
-    <link rel="stylesheet" href="assets/gate.css?v=20260415c">
-    <script src="assets/gate-standalone.js?v=20260415c" defer></script>
-    <script src="assets/home-code-output.js?v=20260415c" defer></script>
+    <link rel="stylesheet" href="assets/gate.css?v=20260415m">
+    <script src="assets/gate-standalone.js?v=20260415i" defer></script>
+    <script src="assets/bundled-data-config.js?v=20260415g" defer></script>
+    <script src="assets/bundled-data-ui.js?v=20260415g" defer></script>
+    <script src="assets/bundled-strategy-ui.js?v=20260415g" defer></script>
+    <script src="assets/xq-upload-helpers.js?v=20260415j" defer></script>
+    <script src="assets/futures-kpi.js?v=20260415c" defer></script>
+    <script src="assets/home-code-output.js?v=20260415p" defer></script>
 </head>
 <body class="is-locked">
-    <div class="gate-layer" id="gate-layer" role="dialog" aria-modal="true" aria-label="密碼視窗">
+    <div class="gate-layer" id="gate-layer" role="dialog" aria-modal="true" aria-label="首頁解鎖">
         <form id="unlock-form" class="gate-card" action="javascript:void(0)" autocomplete="off" novalidate>
-            <input
-                id="unlock-password"
-                class="gate-input"
-                name="password"
-                type="password"
-                placeholder="密碼"
-                aria-label="密碼"
-                autocomplete="current-password"
-                autocapitalize="off"
-                spellcheck="false"
-                required
-            >
-            <button id="unlock-submit" class="gate-button" type="submit">確定</button>
+            <p id="gate-step-label" class="gate-eyebrow" hidden></p>
+            <h1 id="gate-title" class="gate-title" hidden></h1>
+            <p id="gate-copy" class="gate-copy" hidden></p>
+
+            <div id="password-step" class="gate-step">
+                <input
+                    id="unlock-password"
+                    class="gate-input"
+                    name="password"
+                    type="password"
+                    placeholder=""
+                    aria-label="密碼"
+                    autocomplete="current-password"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    required
+                >
+                <button id="unlock-submit" class="gate-button" type="submit">確定</button>
+            </div>
+
+            <div id="slippage-step" class="gate-step" hidden>
+                <label class="gate-field" for="unlock-slippage">
+                    <span class="gate-field-label" hidden></span>
+                    <input
+                        id="unlock-slippage"
+                        class="gate-input"
+                        name="slippage"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value="2"
+                        placeholder=""
+                        inputmode="decimal"
+                        aria-label="滑點"
+                    >
+                </label>
+
+                <div class="gate-step-actions">
+                    <button id="slippage-submit" class="gate-button" type="button">確定</button>
+                </div>
+            </div>
+
             <p id="unlock-status" class="gate-status" aria-live="polite"></p>
         </form>
     </div>
@@ -92,13 +126,37 @@
                 <span class="metric-label">近六年每年報酬率</span>
                 <div id="annual-return-list" class="annual-list"></div>
             </div>
+
+            <div class="annual-panel futures-kpi-panel">
+                <div class="futures-kpi-head">
+                    <span class="metric-label">期貨 KPI</span>
+                    <p id="futures-kpi-note" class="helper-text helper-compact"></p>
+                </div>
+                <div class="futures-kpi-table-wrap">
+                    <table class="futures-kpi-table">
+                        <thead>
+                            <tr>
+                                <th>指標</th>
+                                <th>理論</th>
+                                <th>含滑價</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody id="futures-kpi-body">
+                            <tr>
+                                <td colspan="4">等待回放完成後顯示。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <section id="best-upload-panel" class="upload-panel">
             <div class="panel-head">
                 <div>
                     <p class="panel-kicker">更新與驗證</p>
-                    <h2 class="panel-title">上傳策略、資料庫與 XQ 交易明細</h2>
+                    <h2 class="panel-title">上傳策略、資料庫與交易明細</h2>
                 </div>
                 <button id="apply-best-upload" class="action-button" type="button">更新並比對</button>
             </div>
@@ -107,26 +165,31 @@
                 <label class="upload-card">
                     <span class="upload-label">目前最佳指標版</span>
                     <input id="best-indicator-upload" type="file" accept=".txt,.xs">
+                    <div id="best-indicator-summary" class="upload-summary" aria-live="polite"></div>
                 </label>
                 <label class="upload-card">
                     <span class="upload-label">目前最佳交易版</span>
                     <input id="best-trading-upload" type="file" accept=".txt,.xs">
+                    <div id="best-trading-summary" class="upload-summary" aria-live="polite"></div>
                 </label>
                 <label class="upload-card">
                     <span class="upload-label">M1 資料庫</span>
                     <input id="best-m1-upload" type="file" accept=".txt,.csv">
+                    <div id="best-m1-summary" class="upload-summary" aria-live="polite"></div>
                 </label>
                 <label class="upload-card">
                     <span class="upload-label">D1 資料庫</span>
                     <input id="best-d1-upload" type="file" accept=".txt,.csv">
+                    <div id="best-d1-summary" class="upload-summary" aria-live="polite"></div>
                 </label>
                 <label class="upload-card">
-                    <span class="upload-label">XQ TXT 交易明細</span>
-                    <input id="best-xqtxt-upload" type="file" accept=".txt">
+                    <span class="upload-label">交易明細</span>
+                    <input id="best-xqtxt-upload" type="file" accept=".txt,.csv" multiple>
+                    <div id="best-xq-summary" class="upload-summary" aria-live="polite"></div>
                 </label>
             </div>
 
-            <div class="setting-grid">
+            <div class="setting-grid" hidden>
                 <label class="setting-card">
                     <span class="upload-label">本金</span>
                     <input id="best-capital" class="setting-input" type="number" min="1" step="1" value="1000000">
@@ -141,15 +204,14 @@
                 </label>
             </div>
 
-            <p class="helper-text">DA 不用上傳，系統會依 D1 自動推導。</p>
-            <p id="best-upload-status" class="helper-text" aria-live="polite"></p>
+            <p id="best-upload-status" class="helper-text" aria-live="polite" hidden></p>
         </section>
 
         <section id="best-compare-panel" class="metrics-panel">
             <div class="panel-head">
                 <div>
                     <p class="panel-kicker">回放比對</p>
-                    <h2 class="panel-title">M1 / D1（自動推導 DA）與 XQ TXT 一致性</h2>
+                    <h2 class="panel-title">M1 / D1（自動推導 DA）與交易明細一致性</h2>
                 </div>
             </div>
 

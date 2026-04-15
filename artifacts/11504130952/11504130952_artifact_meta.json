@@ -1,0 +1,19 @@
+﻿{
+    "artifact_id":  "11504130952",
+    "generated_at":  "2026-04-13T09:52:39+08:00",
+    "artifact_status":  "imported",
+    "policy_version":  "legacy-01",
+    "source_format":  "legacy_bundle_export",
+    "data_signature":  "legacy-01|bundled-data|M1+D1",
+    "generated_files":  {
+                            "indicator":  "artifacts/11504130952/11504130952_indicator.xs",
+                            "trading":  "artifacts/11504130952/11504130952_trading.xs",
+                            "params":  "artifacts/11504130952/11504130952_params.txt",
+                            "summary":  "artifacts/11504130952/11504130952_summary.json"
+                        },
+    "notes":  [
+                  "Imported from backup/01 bundle before backup cleanup.",
+                  "Raw legacy export is preserved under artifacts/_imports/legacy-01/exports/20260413_095218_0313_DailyMap_Formal_IND_V5_c02eb130/.",
+                  "Historical MQ01 result retained as reference; not a V2-generated artifact."
+              ]
+}

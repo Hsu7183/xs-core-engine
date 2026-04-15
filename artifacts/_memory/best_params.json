@@ -1,0 +1,34 @@
+﻿{
+    "artifact_id":  "11504130952",
+    "generated_at":  "2026-04-13T09:52:39+08:00",
+    "strategy_family":  "0313plus",
+    "strategy_name":  "0313_DailyMap_Formal_IND_V5",
+    "policy_version":  "legacy-01",
+    "data_signature":  "legacy-01|bundled-data|M1+D1",
+    "best_params":  {
+                        "DonLen":  274,
+                        "ATRLen":  2,
+                        "EMAWarmBars":  1,
+                        "EntryBufferPts":  84,
+                        "DonBufferPts":  117,
+                        "MinATRD":  127,
+                        "ATRStopK":  0.57,
+                        "ATRTakeProfitK":  0.81,
+                        "MaxEntriesPerDay":  10,
+                        "TimeStopBars":  60,
+                        "MinRunPctAnchor":  0.22,
+                        "TrailStartPctAnchor":  0.71,
+                        "TrailGivePctAnchor":  0.02,
+                        "UseAnchorExit":  1,
+                        "AnchorBackPct":  0.82
+                    },
+    "metrics":  {
+                    "total_return":  106.13519999999998,
+                    "mdd_pct":  13.3137,
+                    "n_trades":  302,
+                    "year_avg_return":  15.162171428571428,
+                    "year_return_std":  16.544435042006835,
+                    "loss_years":  0,
+                    "composite_score":  14.524387210085026
+                }
+}

@@ -66,6 +66,7 @@ This repository is not a generic code generator. It is a contract-driven engine 
 
 ## Bootstrap contents
 
+- `docs/CODEX_HANDOFF.md` is the current cross-device handoff file and should be the first file a new Codex session reads before continuing work.
 - `docs/START_HERE.md` is the first document future Codex sessions should read before continuing work.
 - `index.html` is the static workspace homepage for choosing which version or workflow to work on next.
 - `docs/HIGHEST_SPEC_V2.md` is the canonical highest spec and supersedes older strategy habits.
@@ -76,7 +77,8 @@ This repository is not a generic code generator. It is a contract-driven engine 
 - `docs/ENGINE_STANDARD.md` is the repository source of truth for runtime and safety rules.
 - `docs/ARCHITECTURE.md` describes the contract between spec, safety layer, core logic layer, and output layer.
 - `docs/DATA_PIPELINE.md` describes how XQ-exported data should flow into the project.
-- `docs/BACKUP_01_INTEGRATION.md` explains how `backup/01` should be absorbed as reference rather than law.
+- `docs/BACKUP_01_INTEGRATION.md` keeps the earlier design analysis of how `backup/01` should be absorbed.
+- `docs/BACKUP_01_IMPORT_STATUS.md` records which `backup/01` assets are now first-class repo files and what was intentionally left out.
 - `specs/strategy-spec.schema.json` defines the machine-readable strategy contract.
 - `templates/base_indicator.xs` and `templates/base_trading.xs` are the current canonical paired templates.
 - `templates/exporters/*.xs` are XQ-side data export scripts for M1, D1, and daily anchor data.
@@ -91,7 +93,9 @@ This repository is not a generic code generator. It is a contract-driven engine 
 
 ## Current assumptions
 
-- The reference source files `0313_DailyMap_Formal_IND_V5` and `1150412106` are not yet in this workspace.
+- Legacy `01` reference scripts and presets are now preserved under `references/legacy-01/`.
+- Legacy bundled `M1/D1` runtime data is now preserved under `data/bundled/legacy-01/`.
+- A historical best export has been imported into `artifacts/11504130952/` with supporting raw snapshots under `artifacts/_imports/legacy-01/`.
 - The templates are intentionally safe bootstrap shells: they default to flat position and require strategy-specific conditions to be filled from a spec.
 - The repository is ready for the next phase: importing the reference scripts, extracting canonical safety patterns, and wiring a real renderer.
 

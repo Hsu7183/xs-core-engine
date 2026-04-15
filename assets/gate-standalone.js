@@ -8,25 +8,35 @@
         cooldownMs: 5 * 60 * 1000,
         sessionKey: "xs-home-auth-v1",
         lockKey: "xs-home-lock-v1",
+        settingsKey: "xs-home-gate-settings-v1",
         versionKey: "xs-home-gate-version",
-        policyVersion: "gate-standalone-v2",
+        policyVersion: "gate-standalone-v3",
     };
 
     const DEVTOOLS_THRESHOLD = 160;
     const DEBUGGER_THRESHOLD_MS = 150;
     const DEBUGGER_PROBE_INTERVAL_MS = 2000;
     const DETECTION_MESSAGE = "操作已停用";
+    const DEFAULT_SLIPPAGE = 2;
 
     const gateLayer = document.getElementById("gate-layer");
     const unlockForm = document.getElementById("unlock-form");
+    const gateStepLabel = document.getElementById("gate-step-label");
+    const gateTitle = document.getElementById("gate-title");
+    const gateCopy = document.getElementById("gate-copy");
+    const passwordStep = document.getElementById("password-step");
+    const slippageStep = document.getElementById("slippage-step");
     const unlockPassword = document.getElementById("unlock-password");
+    const unlockSlippage = document.getElementById("unlock-slippage");
     const unlockStatus = document.getElementById("unlock-status");
     const unlockSubmit = document.getElementById("unlock-submit");
+    const slippageSubmit = document.getElementById("slippage-submit");
     const workspace = document.getElementById("workspace");
     const lockWorkspaceButton = document.getElementById("lock-workspace");
 
     let debuggerProbeId = 0;
     let trippedByDevtools = false;
+    let passwordVerified = false;
 
     function safeStorageGet(storage, key) {
         try {
@@ -185,10 +195,55 @@
         safeStorageRemove(window.sessionStorage, AUTH_CONFIG.sessionKey);
     }
 
+    function readSettings() {
+        return readJson(window.localStorage, AUTH_CONFIG.settingsKey);
+    }
+
+    function writeSettings(settings) {
+        writeJson(window.localStorage, AUTH_CONFIG.settingsKey, settings);
+    }
+
     function writeSession() {
         writeJson(window.sessionStorage, AUTH_CONFIG.sessionKey, {
             expiresAt: Date.now() + AUTH_CONFIG.sessionTtlMs,
         });
+    }
+
+    function normalizeSlippage(value) {
+        const next = Number(value);
+        if (!Number.isFinite(next) || next < 0) {
+            return null;
+        }
+
+        return Math.round(next * 10) / 10;
+    }
+
+    function readSavedSlippage() {
+        const saved = readSettings();
+        const slippage = normalizeSlippage(saved && saved.slippage);
+        return slippage == null ? DEFAULT_SLIPPAGE : slippage;
+    }
+
+    function persistSlippage(value) {
+        const slippage = normalizeSlippage(value);
+        if (slippage == null) {
+            return;
+        }
+
+        writeSettings({
+            slippage: slippage,
+            updatedAt: Date.now(),
+        });
+    }
+
+    function emitSlippageReady(slippage) {
+        try {
+            window.dispatchEvent(new CustomEvent("xs:slippage-ready", {
+                detail: { slippage: slippage },
+            }));
+        } catch {
+            // ignore custom event failures
+        }
     }
 
     function resetLegacyStateIfNeeded() {
@@ -224,8 +279,10 @@
         gateLayer.removeAttribute("aria-hidden");
         workspace.hidden = true;
         workspace.inert = true;
+        passwordVerified = false;
         unlockPassword.value = "";
-        unlockPassword.focus();
+        unlockSlippage.value = String(readSavedSlippage());
+        showPasswordStep();
     }
 
     function setUnlockedUi() {
@@ -246,10 +303,41 @@
         setLockedUi();
     }
 
-    function unlockWorkspace() {
+    function unlockWorkspace(slippage) {
         resetLockState();
+        persistSlippage(slippage);
         writeSession();
         setUnlockedUi();
+        emitSlippageReady(readSavedSlippage());
+    }
+
+    function showPasswordStep() {
+        passwordVerified = false;
+        gateStepLabel.textContent = "";
+        gateTitle.textContent = "";
+        gateCopy.textContent = "";
+        passwordStep.hidden = false;
+        passwordStep.style.display = "grid";
+        slippageStep.hidden = true;
+        slippageStep.style.display = "none";
+        unlockSubmit.disabled = false;
+        slippageSubmit.disabled = false;
+        unlockPassword.focus();
+    }
+
+    function showSlippageStep() {
+        passwordVerified = true;
+        gateStepLabel.textContent = "";
+        gateTitle.textContent = "";
+        gateCopy.textContent = "";
+        passwordStep.hidden = true;
+        passwordStep.style.display = "none";
+        slippageStep.hidden = false;
+        slippageStep.style.display = "grid";
+        unlockSlippage.value = String(readSavedSlippage());
+        setStatus("");
+        unlockSlippage.focus();
+        unlockSlippage.select();
     }
 
     function cleanUrlPassword() {
@@ -378,11 +466,13 @@
         }
 
         unlockSubmit.disabled = true;
+        let advancedToSlippage = false;
 
         try {
             const isValid = await verifyPassword(password);
             if (isValid) {
-                unlockWorkspace();
+                showSlippageStep();
+                advancedToSlippage = true;
                 return;
             }
 
@@ -399,12 +489,38 @@
             setStatus("驗證失敗");
         } finally {
             unlockSubmit.disabled = false;
-            unlockPassword.select();
+            if (!advancedToSlippage) {
+                unlockPassword.select();
+            }
         }
+    }
+
+    function handleSlippageSubmit() {
+        if (!passwordVerified) {
+            setStatus("請先完成密碼驗證");
+            showPasswordStep();
+            return;
+        }
+
+        const slippage = normalizeSlippage(unlockSlippage.value);
+        if (slippage == null) {
+            setStatus("請輸入 0 以上的滑點");
+            unlockSlippage.focus();
+            unlockSlippage.select();
+            return;
+        }
+
+        slippageSubmit.disabled = true;
+        unlockWorkspace(slippage);
+        slippageSubmit.disabled = false;
     }
 
     function handleSubmit(event) {
         event.preventDefault();
+        if (!slippageStep.hidden) {
+            handleSlippageSubmit();
+            return;
+        }
         attemptUnlock(unlockPassword.value);
     }
 
@@ -447,10 +563,12 @@
         resetLegacyStateIfNeeded();
         unlockForm.addEventListener("submit", handleSubmit);
         lockWorkspaceButton.addEventListener("click", handleLockClick);
+        slippageSubmit.addEventListener("click", handleSlippageSubmit);
         installDeterrents();
 
         if (hasValidSession()) {
             setUnlockedUi();
+            emitSlippageReady(readSavedSlippage());
             return;
         }
 

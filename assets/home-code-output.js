@@ -1952,6 +1952,30 @@ end;`,
         };
     }
 
+    function isPerformancePayload(value) {
+        return Boolean(
+            value
+            && Array.isArray(value.points)
+            && Array.isArray(value.weekly)
+            && value.rangeMap
+        );
+    }
+
+    function getDefaultPerformanceRangeKeyForGroup(rangeMap, groupKey) {
+        const group = PERFORMANCE_RANGE_GROUPS[groupKey];
+        if (!rangeMap || !group) {
+            return null;
+        }
+
+        for (let index = group.keys.length - 1; index >= 0; index -= 1) {
+            const key = group.keys[index];
+            if (rangeMap[key]) {
+                return key;
+            }
+        }
+        return null;
+    }
+
     function getPerformanceSlice(payload, rangeKey) {
         if (!payload || !payload.rangeMap) {
             return null;
@@ -2082,10 +2106,6 @@ end;`,
             return;
         }
 
-        if (activeKey !== "all") {
-            performanceChartRangeGroup = getPerformanceGroupForKey(activeKey) || performanceChartRangeGroup;
-        }
-
         performanceRangeGroupButtons.forEach(function (button) {
             const active = button.dataset.performanceRangeGroup === performanceChartRangeGroup;
             button.classList.toggle("is-active", active);
@@ -2117,7 +2137,7 @@ end;`,
                     return;
                 }
                 performanceChartRangeKey = key;
-                renderPerformanceCharts(performanceChartPayload, performanceChartRangeKey);
+                renderPerformanceCharts(null, performanceChartRangeKey);
             });
             performanceRangeList.appendChild(button);
         });
@@ -2130,14 +2150,20 @@ end;`,
                 return;
             }
             performanceChartRangeGroup = nextGroup;
-            renderPerformanceRangeButtons(performanceChartRangeKey);
+            const nextRangeKey = getPerformanceGroupForKey(performanceChartRangeKey) === nextGroup
+                ? performanceChartRangeKey
+                : (getDefaultPerformanceRangeKeyForGroup(
+                    performanceChartPayload ? performanceChartPayload.rangeMap : null,
+                    nextGroup
+                ) || performanceChartRangeKey);
+            renderPerformanceCharts(null, nextRangeKey);
         });
     });
 
     if (performanceRangeReset) {
         performanceRangeReset.addEventListener("click", function () {
             performanceChartRangeKey = "all";
-            renderPerformanceCharts(performanceChartPayload, "all");
+            renderPerformanceCharts(null, "all");
         });
     }
 
@@ -2418,7 +2444,9 @@ end;`,
             return;
         }
 
-        if (report) {
+        if (isPerformancePayload(report)) {
+            performanceChartPayload = report;
+        } else if (report) {
             performanceChartPayload = buildPerformancePayload(report);
         }
 

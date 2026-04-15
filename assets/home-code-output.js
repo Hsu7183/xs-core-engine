@@ -446,6 +446,79 @@ end;`,
             el.style.display = visible ? "" : "none";
         }
     }
+    function findExecutableTradingPrintLines(code) {
+        const lines = String(code || "").replace(/\r\n/g, "\n").split("\n");
+        const found = [];
+        let inMetaBlock = false;
+
+        lines.forEach(function (line, index) {
+            const trimmed = line.trim();
+            if (!trimmed) {
+                return;
+            }
+            if (!inMetaBlock && trimmed.startsWith("{*")) {
+                inMetaBlock = !trimmed.includes("*}");
+                return;
+            }
+            if (inMetaBlock) {
+                if (trimmed.includes("*}")) {
+                    inMetaBlock = false;
+                }
+                return;
+            }
+            if (trimmed.startsWith("//")) {
+                return;
+            }
+            if (/\b(?:print|plot\d+)\s*\(/i.test(trimmed)) {
+                found.push(index + 1);
+            }
+        });
+
+        return found;
+    }
+    function protectTradingCode(code, fileName) {
+        const lines = String(code || "").replace(/\r\n/g, "\n").split("\n");
+        const offending = findExecutableTradingPrintLines(code);
+        if (!offending.length) {
+            return String(code || "");
+        }
+
+        let inMetaBlock = false;
+        const safeLines = lines.map(function (line) {
+            const trimmed = line.trim();
+            if (!trimmed) {
+                return line;
+            }
+            if (!inMetaBlock && trimmed.startsWith("{*")) {
+                inMetaBlock = !trimmed.includes("*}");
+                return line;
+            }
+            if (inMetaBlock) {
+                if (trimmed.includes("*}")) {
+                    inMetaBlock = false;
+                }
+                return line;
+            }
+            if (trimmed.startsWith("//")) {
+                return line;
+            }
+            if (/\b(?:print|plot\d+)\s*\(/i.test(trimmed)) {
+                return line.replace(/^(\s*)/, "$1// ");
+            }
+            return line;
+        });
+
+        if (window.console && typeof window.console.warn === "function") {
+            window.console.warn(
+                "xs-core-engine safety guard removed executable Print/Plot lines from "
+                + (fileName || "trading.xs")
+                + " at lines "
+                + offending.join(", ")
+            );
+        }
+
+        return safeLines.join("\n");
+    }
     function formatPercent(v) { return Number(v).toFixed(1) + "%"; }
     function formatSignedPercent(v) { const n = Number(v); return (n > 0 ? "+" : "") + n.toFixed(1) + "%"; }
     function hasMetricValue(v) {
@@ -509,7 +582,18 @@ end;`,
             return null;
         }
     }
-    function writeStore(value) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(value)); } catch { } }
+    function writeStore(value) {
+        try {
+            const nextValue = value && typeof value === "object" && !Array.isArray(value)
+                ? Object.assign({}, value)
+                : value;
+            if (nextValue && typeof nextValue.trading === "string") {
+                nextValue.trading = protectTradingCode(nextValue.trading, "stored_trading.xs");
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(nextValue));
+        } catch {
+        }
+    }
     function setBestButtonBusy(busy) {
         if (!applyBestUploadButton) {
             return;
@@ -646,6 +730,7 @@ end;`,
         if (!bundledStrategyUi || !pair) {
             return;
         }
+        const safeTrading = protectTradingCode(pair.trading, bestId + "_trading.xs");
         bundledStrategyUi.renderSummaries(
             {
                 indicatorTarget: bestIndicatorSummary,
@@ -656,7 +741,7 @@ end;`,
                 indicatorFileName: bestId + "_indicator.xs",
                 tradingFileName: bestId + "_trading.xs",
                 indicatorCode: pair.indicator,
-                tradingCode: pair.trading,
+                tradingCode: safeTrading,
             }
         );
     }
@@ -1466,6 +1551,7 @@ end;`,
     }
 
     function showPair(kicker, title, baseName, indicator, trading) {
+        const safeTrading = protectTradingCode(trading, baseName + "_trading.xs");
         setVisible(pairOutput, true);
         setVisible(exportOutput, false);
         setText(outputKicker, kicker);
@@ -1474,7 +1560,7 @@ end;`,
         setText(indicatorFilename, baseName + "_indicator.xs");
         setText(tradingFilename, baseName + "_trading.xs");
         indicatorOutput.value = indicator;
-        tradingOutput.value = trading;
+        tradingOutput.value = safeTrading;
     }
 
     function showExport(baseName) {

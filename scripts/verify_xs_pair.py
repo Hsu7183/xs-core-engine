@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import sys
 
 
@@ -28,6 +29,10 @@ REQUIRED_SNIPPETS = [
     'dayRefDate = Date',
     'dataReady = historyReady and dayInitOk and dayInitDate = Date and dailyFieldReady and crossFrequencyReady and indicatorsReady;'
 ]
+
+EXECUTABLE_PRINT_PATTERN = re.compile(r"\bPrint\s*\(")
+EXECUTABLE_PLOT_PATTERN = re.compile(r"\bPlot\d+\s*\(")
+EXECUTABLE_SETPOSITION_PATTERN = re.compile(r"\bSetPosition\s*\(")
 
 
 def read_text(path: pathlib.Path) -> str:
@@ -63,6 +68,15 @@ def ensure_required_snippets(text: str) -> list[str]:
     return [snippet for snippet in REQUIRED_SNIPPETS if snippet not in text]
 
 
+def executable_lines(text: str, pattern: re.Pattern[str]) -> list[int]:
+    lines: list[int] = []
+    for lineno, raw_line in enumerate(text.splitlines(), start=1):
+        active = raw_line.split("//", 1)[0].strip()
+        if active and pattern.search(active):
+            lines.append(lineno)
+    return lines
+
+
 def compare_core(indicator_sections: dict[str, str], trading_sections: dict[str, str]) -> list[str]:
     problems: list[str] = []
 
@@ -76,18 +90,25 @@ def compare_core(indicator_sections: dict[str, str], trading_sections: dict[str,
 def ensure_output_contract(indicator_c6: str, trading_c6: str) -> list[str]:
     problems: list[str] = []
 
-    if "Plot1(" not in indicator_c6:
+    indicator_prints = executable_lines(indicator_c6, EXECUTABLE_PRINT_PATTERN)
+    indicator_plots = executable_lines(indicator_c6, EXECUTABLE_PLOT_PATTERN)
+    indicator_positions = executable_lines(indicator_c6, EXECUTABLE_SETPOSITION_PATTERN)
+    trading_prints = executable_lines(trading_c6, EXECUTABLE_PRINT_PATTERN)
+    trading_plots = executable_lines(trading_c6, EXECUTABLE_PLOT_PATTERN)
+    trading_positions = executable_lines(trading_c6, EXECUTABLE_SETPOSITION_PATTERN)
+
+    if not indicator_plots:
         problems.append("indicator C6 must contain Plot output")
-    if "Print(File(" not in indicator_c6:
+    if not indicator_prints:
         problems.append("indicator C6 must contain Print(File(...), outStr) output")
-    if "SetPosition(" in indicator_c6:
+    if indicator_positions:
         problems.append("indicator C6 must not contain SetPosition")
 
-    if "SetPosition(" not in trading_c6:
+    if not trading_positions:
         problems.append("trading C6 must contain SetPosition(..., MARKET)")
-    if "Print(File(" not in trading_c6:
-        problems.append("trading C6 must contain Print(File(...), outStr) output")
-    if "Plot1(" in trading_c6:
+    if trading_prints:
+        problems.append("trading C6 must not contain executable Print(File(...), ...) output")
+    if trading_plots:
         problems.append("trading C6 must not contain Plot output")
 
     return problems

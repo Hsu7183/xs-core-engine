@@ -4,10 +4,19 @@ from pathlib import Path
 import re
 import sys
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except OSError:
+        pass
+
 
 ROOT = Path(__file__).resolve().parents[1]
 INDICATOR = ROOT / "templates" / "base_indicator.xs"
 TRADING = ROOT / "templates" / "base_trading.xs"
+BOOTSTRAP_INDICATOR = ROOT / "templates" / "xs" / "indicator.template.xs"
+BOOTSTRAP_TRADING = ROOT / "templates" / "xs" / "trading.template.xs"
 
 COMMON_REQUIRED = [
     'if barfreq <> "Min" then',
@@ -36,8 +45,6 @@ INDICATOR_REQUIRED = [
 ]
 
 TRADING_REQUIRED = [
-    'Print(File(TxtPath), outStr);',
-    'Plot1(IFF(currentAction = "新買", Open, 0), "新買");',
     'SetPosition(0, MARKET);',
     'SetPosition(1, MARKET);',
     'SetPosition(-1, MARKET);',
@@ -45,6 +52,7 @@ TRADING_REQUIRED = [
 
 C6_MARKER = "//====================== C6."
 MULTI_PRINT_PATTERN = re.compile(r"Print\s*\(\s*File\([^)]*\)\s*,\s*[^,)]+\s*,")
+EXECUTABLE_PRINT_PATTERN = re.compile(r"\bPrint\s*\(")
 
 
 def read_text(path: Path) -> str:
@@ -73,14 +81,39 @@ def find_multi_prints(text: str) -> list[str]:
     return issues
 
 
+def find_executable_prints(text: str) -> list[str]:
+    issues: list[str] = []
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        active = line.split("//", 1)[0].strip()
+        if active and EXECUTABLE_PRINT_PATTERN.search(active):
+            issues.append(f"line {lineno}: executable Print(...) is forbidden in trading outputs")
+    return issues
+
+
+def has_executable_print(text: str) -> bool:
+    for line in text.splitlines():
+        active = line.split("//", 1)[0].strip()
+        if active and EXECUTABLE_PRINT_PATTERN.search(active):
+            return True
+    return False
+
+
 def main() -> int:
     errors: list[str] = []
 
     indicator_text = read_text(INDICATOR)
     trading_text = read_text(TRADING)
+    bootstrap_indicator_text = read_text(BOOTSTRAP_INDICATOR)
+    bootstrap_trading_text = read_text(BOOTSTRAP_TRADING)
 
-    errors.extend(f"{INDICATOR}: missing snippet -> {item}" for item in missing_required(indicator_text, COMMON_REQUIRED + INDICATOR_REQUIRED))
-    errors.extend(f"{TRADING}: missing snippet -> {item}" for item in missing_required(trading_text, COMMON_REQUIRED + TRADING_REQUIRED))
+    errors.extend(
+        f"{INDICATOR}: missing snippet -> {item}"
+        for item in missing_required(indicator_text, COMMON_REQUIRED + INDICATOR_REQUIRED)
+    )
+    errors.extend(
+        f"{TRADING}: missing snippet -> {item}"
+        for item in missing_required(trading_text, COMMON_REQUIRED + TRADING_REQUIRED)
+    )
 
     try:
         if extract_core(indicator_text) != extract_core(trading_text):
@@ -90,6 +123,11 @@ def main() -> int:
 
     errors.extend(f"{INDICATOR}: {item}" for item in find_multi_prints(indicator_text))
     errors.extend(f"{TRADING}: {item}" for item in find_multi_prints(trading_text))
+    errors.extend(f"{TRADING}: {item}" for item in find_executable_prints(trading_text))
+    errors.extend(f"{BOOTSTRAP_TRADING}: {item}" for item in find_executable_prints(bootstrap_trading_text))
+
+    if not has_executable_print(bootstrap_indicator_text):
+        errors.append(f"{BOOTSTRAP_INDICATOR}: indicator bootstrap template unexpectedly lost executable Print(...) output")
 
     if errors:
         print("data-ready check failed:")

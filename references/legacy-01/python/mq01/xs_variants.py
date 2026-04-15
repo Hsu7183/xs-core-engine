@@ -57,9 +57,57 @@ end;
 """
 
 
+_SECTION_HEADER_RE = re.compile(r"(?m)^//=+\s*C\d+\..*$")
+_EXECUTABLE_OUTPUT_LINE_RE = re.compile(r"^\s*(?:print\s*\(|plot\d+\s*\()", re.IGNORECASE)
+
+
+def _strip_output_sections(xs_prefix: str) -> str:
+    matches = list(_SECTION_HEADER_RE.finditer(xs_prefix))
+    if not matches:
+        return xs_prefix
+
+    kept_chunks: list[str] = []
+    cursor = 0
+
+    for index, match in enumerate(matches):
+        start = match.start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(xs_prefix)
+        section = xs_prefix[start:end]
+
+        kept_chunks.append(xs_prefix[cursor:start])
+        if "print(file(" not in section.lower():
+            kept_chunks.append(section)
+        cursor = end
+
+    kept_chunks.append(xs_prefix[cursor:])
+    return "".join(kept_chunks)
+
+
+def _strip_executable_output_lines(xs_prefix: str) -> str:
+    trailing_newline = xs_prefix.endswith("\n")
+    safe_lines: list[str] = []
+
+    for line in xs_prefix.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("//"):
+            safe_lines.append(line)
+            continue
+        if _EXECUTABLE_OUTPUT_LINE_RE.match(line):
+            safe_lines.append(re.sub(r"^(\s*)", r"\1// ", line, count=1))
+            continue
+        safe_lines.append(line)
+
+    rendered = "\n".join(safe_lines)
+    if trailing_newline:
+        rendered += "\n"
+    return rendered
+
+
 def render_trade_xs(base_xs_text: str, best_params: Mapping[str, Any]) -> str:
     rendered = render_indicator_xs(base_xs_text, best_params)
     marker = "//====================== C10."
     if marker in rendered:
-        rendered = rendered.split(marker, 1)[0].rstrip() + "\n\n"
+        rendered = rendered.split(marker, 1)[0]
+    rendered = _strip_output_sections(rendered)
+    rendered = _strip_executable_output_lines(rendered).rstrip() + "\n\n"
     return rendered + _TRADE_SECTION

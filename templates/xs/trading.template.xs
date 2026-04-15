@@ -132,17 +132,18 @@ begin
 end;
 
 // C6 Output
-if EmitHeader and not headerWritten and TxtPath <> "" then
-begin
-    Print(File(TxtPath), "engine=xs-core-engine,layer=trading,mode=spec-first");
-    headerWritten = true;
-end;
-
-if outAction <> "" and TxtPath <> "" then
-begin
-    outStr = "YYYYMMDDhhmmss " + NumToStr(Open, 2) + " " + outAction;
-    Print(File(TxtPath), outStr);
-end;
+// Trading output must not emit Print/File logs.
+// if EmitHeader and not headerWritten and TxtPath <> "" then
+// begin
+//     Print(File(TxtPath), "engine=xs-core-engine,layer=trading,mode=spec-first");
+//     headerWritten = true;
+// end;
+//
+// if outAction <> "" and TxtPath <> "" then
+// begin
+//     outStr = "YYYYMMDDhhmmss " + NumToStr(Open, 2) + " " + outAction;
+//     Print(File(TxtPath), outStr);
+// end;
 
 if desiredPosition <> Position then
     SetPosition(desiredPosition, MARKET);

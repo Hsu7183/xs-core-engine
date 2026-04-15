@@ -24,6 +24,47 @@
             { year: "待驗證", value: null },
         ],
     };
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const PERFORMANCE_RANGE_GROUPS = {
+        week: {
+            keys: ["week_1", "week_2", "week_3", "week_4"],
+            spanLabel: function (span) { return span === 1 ? "當週" : ("近" + span + "週"); },
+        },
+        month: {
+            keys: ["month_1", "month_2", "month_3", "month_4", "month_5", "month_6"],
+            spanLabel: function (span) { return span === 1 ? "當月" : ("近" + span + "月"); },
+        },
+        year: {
+            keys: ["year_1", "year_2", "year_3", "year_4", "year_5", "year_6"],
+            spanLabel: function (span) { return span === 1 ? "今年" : ("近" + span + "年"); },
+        },
+    };
+    const PERFORMANCE_PERIOD_DEFS = {
+        week_1: { group: "week", span: 1 },
+        week_2: { group: "week", span: 2 },
+        week_3: { group: "week", span: 3 },
+        week_4: { group: "week", span: 4 },
+        month_1: { group: "month", span: 1 },
+        month_2: { group: "month", span: 2 },
+        month_3: { group: "month", span: 3 },
+        month_4: { group: "month", span: 4 },
+        month_5: { group: "month", span: 5 },
+        month_6: { group: "month", span: 6 },
+        year_1: { group: "year", span: 1 },
+        year_2: { group: "year", span: 2 },
+        year_3: { group: "year", span: 3 },
+        year_4: { group: "year", span: 4 },
+        year_5: { group: "year", span: 5 },
+        year_6: { group: "year", span: 6 },
+    };
+    const PERFORMANCE_RANGE_OPTIONS = Object.keys(PERFORMANCE_PERIOD_DEFS).map(function (key) {
+        const definition = PERFORMANCE_PERIOD_DEFS[key];
+        return {
+            key: key,
+            label: (PERFORMANCE_RANGE_GROUPS[definition.group] || PERFORMANCE_RANGE_GROUPS.week).spanLabel(definition.span),
+            years: definition.group === "year" ? definition.span : null,
+        };
+    });
     const PROFILES = {
         breakout: {
             DonLen: "274",
@@ -388,6 +429,14 @@ end;`,
     const annualReturnTitle = annualReturnList && annualReturnList.parentElement
         ? annualReturnList.parentElement.querySelector(".metric-label")
         : null;
+    const performanceRangeGroupButtons = Array.from(document.querySelectorAll("[data-performance-range-group]"));
+    const performanceRangeReset = document.getElementById("performance-range-reset");
+    const performanceRangeList = document.getElementById("performance-range-list");
+    const performanceChartNote = document.getElementById("performance-chart-note");
+    const performanceLegend = document.getElementById("performance-legend");
+    const performanceChartEmpty = document.getElementById("performance-chart-empty");
+    const performanceEquityChart = document.getElementById("performance-equity-chart");
+    const performanceWeeklyChart = document.getElementById("performance-weekly-chart");
     const bestIndicatorUpload = document.getElementById("best-indicator-upload");
     const bestTradingUpload = document.getElementById("best-trading-upload");
     const bestIndicatorSummary = document.getElementById("best-indicator-summary");
@@ -438,6 +487,9 @@ end;`,
     let fixedBestId = null;
     let bestModeAutoRunStarted = false;
     let fileModeBridgeAttempted = false;
+    let performanceChartPayload = null;
+    let performanceChartRangeGroup = "year";
+    let performanceChartRangeKey = "year_6";
 
     function setText(el, value) { if (el) { el.textContent = String(value ?? ""); } }
     function setVisible(el, visible) {
@@ -1550,6 +1602,866 @@ end;`,
         });
     }
 
+    function createSvgNode(tagName, attributes) {
+        const node = document.createElementNS(SVG_NS, tagName);
+        Object.keys(attributes || {}).forEach(function (key) {
+            if (attributes[key] !== undefined && attributes[key] !== null) {
+                node.setAttribute(key, String(attributes[key]));
+            }
+        });
+        return node;
+    }
+
+    function clearNode(node) {
+        if (node) {
+            node.replaceChildren();
+        }
+    }
+
+    function parseChartTimestamp(value) {
+        const digits = String(value || "").replace(/\D+/g, "");
+        if (digits.length < 8) {
+            return null;
+        }
+
+        const year = toInt(digits.slice(0, 4), 0);
+        const month = toInt(digits.slice(4, 6), 1) - 1;
+        const day = toInt(digits.slice(6, 8), 1);
+        const hour = digits.length >= 10 ? toInt(digits.slice(8, 10), 0) : 0;
+        const minute = digits.length >= 12 ? toInt(digits.slice(10, 12), 0) : 0;
+        const date = new Date(year, month, day, hour, minute, 0, 0);
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function cloneChartDate(date) {
+        return date instanceof Date ? new Date(date.getTime()) : null;
+    }
+
+    function addChartYears(date, years) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        next.setFullYear(next.getFullYear() + years);
+        return next;
+    }
+
+    function addChartDays(date, days) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        next.setDate(next.getDate() + days);
+        return next;
+    }
+
+    function addChartMonths(date, months) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        return new Date(next.getFullYear(), next.getMonth() + months, 1);
+    }
+
+    function startOfChartWeek(date) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        const day = next.getDay();
+        const diff = (day + 6) % 7;
+        next.setHours(0, 0, 0, 0);
+        next.setDate(next.getDate() - diff);
+        return next;
+    }
+
+    function startOfChartMonth(date) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        return new Date(next.getFullYear(), next.getMonth(), 1);
+    }
+
+    function startOfChartYear(date) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        return new Date(next.getFullYear(), 0, 1);
+    }
+
+    function formatChartDate(date, compact) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+            return "";
+        }
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        if (compact) {
+            return String(year);
+        }
+        return year + "/" + month;
+    }
+
+    function formatRangeCaption(range) {
+        if (!range || !(range.start instanceof Date) || !(range.end instanceof Date)) {
+            return "全部區間";
+        }
+        return range.label + "｜" + formatChartDate(range.start, false) + " - " + formatChartDate(range.end, false);
+    }
+
+    function buildPerformanceRangeMap(firstDate, lastDate) {
+        const rangeMap = {};
+        PERFORMANCE_RANGE_OPTIONS.forEach(function (option) {
+            if (!(firstDate instanceof Date) || !(lastDate instanceof Date)) {
+                return;
+            }
+            const start = option.years == null
+                ? cloneChartDate(firstDate)
+                : (function () {
+                    const candidate = addChartYears(lastDate, -option.years);
+                    if (!(candidate instanceof Date)) {
+                        return cloneChartDate(firstDate);
+                    }
+                    return candidate < firstDate ? cloneChartDate(firstDate) : candidate;
+                }());
+
+            rangeMap[option.key] = {
+                key: option.key,
+                label: option.label,
+                start: start,
+                end: cloneChartDate(lastDate),
+            };
+        });
+        return rangeMap;
+    }
+
+    function chooseTickIndexes(length, maxTickCount) {
+        if (!Number.isFinite(length) || length <= 0) {
+            return [];
+        }
+        if (length === 1) {
+            return [0];
+        }
+
+        const target = Math.max(2, Math.min(length, maxTickCount || 6));
+        const indexes = new Set([0, length - 1]);
+        for (let i = 1; i < target - 1; i += 1) {
+            indexes.add(Math.round((length - 1) * (i / (target - 1))));
+        }
+        return Array.from(indexes).sort(function (left, right) { return left - right; });
+    }
+
+    function getPerformancePeriodLabel(key) {
+        const definition = PERFORMANCE_PERIOD_DEFS[key];
+        const group = definition ? PERFORMANCE_RANGE_GROUPS[definition.group] : null;
+        return definition && group ? group.spanLabel(definition.span) : "";
+    }
+
+    function getPerformanceGroupForKey(key) {
+        return PERFORMANCE_PERIOD_DEFS[key] ? PERFORMANCE_PERIOD_DEFS[key].group : null;
+    }
+
+    function hasPerformanceDataInRange(points, start, end) {
+        return (Array.isArray(points) ? points : []).some(function (point) {
+            return !point.synthetic && point.date instanceof Date && point.date >= start && point.date <= end;
+        });
+    }
+
+    function buildPerformanceRangeCatalog(firstDate, lastDate, points) {
+        const rangeMap = {
+            all: {
+                key: "all",
+                label: "全部",
+                start: cloneChartDate(firstDate),
+                end: cloneChartDate(lastDate),
+                group: null,
+            },
+        };
+
+        if (!(firstDate instanceof Date) || !(lastDate instanceof Date)) {
+            return rangeMap;
+        }
+
+        Object.keys(PERFORMANCE_PERIOD_DEFS).forEach(function (key) {
+            const definition = PERFORMANCE_PERIOD_DEFS[key];
+            let start = null;
+
+            if (definition.group === "week") {
+                start = addChartDays(startOfChartWeek(lastDate), -7 * (definition.span - 1));
+            } else if (definition.group === "month") {
+                start = addChartMonths(startOfChartMonth(lastDate), -(definition.span - 1));
+            } else if (definition.group === "year") {
+                start = addChartYears(startOfChartYear(lastDate), -(definition.span - 1));
+            }
+
+            if (!(start instanceof Date)) {
+                return;
+            }
+            if (start < firstDate) {
+                start = cloneChartDate(firstDate);
+            }
+            if (!hasPerformanceDataInRange(points, start, lastDate)) {
+                return;
+            }
+
+            rangeMap[key] = {
+                key: key,
+                label: getPerformancePeriodLabel(key),
+                start: start,
+                end: cloneChartDate(lastDate),
+                group: definition.group,
+            };
+        });
+
+        return rangeMap;
+    }
+
+    function getDefaultPerformanceRangeKey(rangeMap) {
+        if (!rangeMap) {
+            return "all";
+        }
+
+        const preferredKeys = [
+            "year_6", "year_5", "year_4", "year_3", "year_2", "year_1",
+            "month_6", "month_5", "month_4", "month_3", "month_2", "month_1",
+            "week_4", "week_3", "week_2", "week_1",
+            "all",
+        ];
+        for (let index = 0; index < preferredKeys.length; index += 1) {
+            if (rangeMap[preferredKeys[index]]) {
+                return preferredKeys[index];
+            }
+        }
+        return Object.keys(rangeMap)[0] || "all";
+    }
+
+    function formatPerformanceRangeCaption(range) {
+        if (!range || !(range.start instanceof Date) || !(range.end instanceof Date)) {
+            return "全部區間";
+        }
+        return range.label + "｜" + formatChartDate(range.start, false) + " - " + formatChartDate(range.end, false);
+    }
+
+    function formatAxisMoney(value) {
+        if (!Number.isFinite(value)) {
+            return "";
+        }
+        return Math.round(value).toLocaleString("en-US");
+    }
+
+    function buildPerformancePayload(report) {
+        const safeDetails = Array.isArray(report && report.details) ? report.details : [];
+        if (!safeDetails.length) {
+            return null;
+        }
+
+        const normalized = safeDetails.map(function (detail) {
+            return {
+                date: parseChartTimestamp(detail && detail.exitTs),
+                side: String(detail && detail.side || "").toLowerCase(),
+                theoryPnl: Number(detail && detail.theoryPnl),
+                actualPnl: Number(detail && detail.actualPnl),
+            };
+        }).filter(function (detail) {
+            return detail.date instanceof Date
+                && Number.isFinite(detail.theoryPnl)
+                && Number.isFinite(detail.actualPnl);
+        }).sort(function (left, right) {
+            return left.date - right.date;
+        });
+
+        if (!normalized.length) {
+            return null;
+        }
+
+        const firstDate = cloneChartDate(normalized[0].date);
+        const lastDate = cloneChartDate(normalized[normalized.length - 1].date);
+        const points = [{
+            date: cloneChartDate(firstDate),
+            theoryTotal: 0,
+            actualTotal: 0,
+            theoryLong: 0,
+            actualLong: 0,
+            theoryShort: 0,
+            actualShort: 0,
+            synthetic: true,
+        }];
+        const weeklyMap = new Map();
+
+        let theoryTotal = 0;
+        let actualTotal = 0;
+        let theoryLong = 0;
+        let actualLong = 0;
+        let theoryShort = 0;
+        let actualShort = 0;
+
+        normalized.forEach(function (detail) {
+            theoryTotal += detail.theoryPnl;
+            actualTotal += detail.actualPnl;
+
+            if (detail.side === "long") {
+                theoryLong += detail.theoryPnl;
+                actualLong += detail.actualPnl;
+            } else if (detail.side === "short") {
+                theoryShort += detail.theoryPnl;
+                actualShort += detail.actualPnl;
+            }
+
+            points.push({
+                date: cloneChartDate(detail.date),
+                theoryTotal: round1(theoryTotal),
+                actualTotal: round1(actualTotal),
+                theoryLong: round1(theoryLong),
+                actualLong: round1(actualLong),
+                theoryShort: round1(theoryShort),
+                actualShort: round1(actualShort),
+                synthetic: false,
+            });
+
+            const weekDate = startOfChartWeek(detail.date);
+            const weekKey = weekDate ? String(weekDate.getTime()) : "";
+            if (!weekKey) {
+                return;
+            }
+
+            if (!weeklyMap.has(weekKey)) {
+                weeklyMap.set(weekKey, {
+                    date: weekDate,
+                    actual: 0,
+                });
+            }
+
+            const bucket = weeklyMap.get(weekKey);
+            bucket.actual += detail.actualPnl;
+        });
+
+        const weekly = Array.from(weeklyMap.values()).sort(function (left, right) {
+            return left.date - right.date;
+        }).map(function (item) {
+            return {
+                date: cloneChartDate(item.date),
+                actual: round1(item.actual),
+            };
+        });
+
+        return {
+            points: points,
+            weekly: weekly,
+            rangeMap: buildPerformanceRangeCatalog(firstDate, lastDate, points),
+        };
+    }
+
+    function getPerformanceSlice(payload, rangeKey) {
+        if (!payload || !payload.rangeMap) {
+            return null;
+        }
+
+        const range = payload.rangeMap[rangeKey] || payload.rangeMap.all || null;
+        if (!range) {
+            return null;
+        }
+
+        let baseline = {
+            theoryTotal: 0,
+            actualTotal: 0,
+            theoryLong: 0,
+            actualLong: 0,
+            theoryShort: 0,
+            actualShort: 0,
+        };
+
+        payload.points.forEach(function (point) {
+            if (!point.synthetic && point.date < range.start) {
+                baseline = point;
+            }
+        });
+
+        const adjustedPoints = payload.points.filter(function (point) {
+            return !point.synthetic && point.date >= range.start && point.date <= range.end;
+        }).map(function (point) {
+            return {
+                date: cloneChartDate(point.date),
+                theoryTotal: round1(point.theoryTotal - baseline.theoryTotal),
+                actualTotal: round1(point.actualTotal - baseline.actualTotal),
+                theoryLong: round1(point.theoryLong - baseline.theoryLong),
+                actualLong: round1(point.actualLong - baseline.actualLong),
+                theoryShort: round1(point.theoryShort - baseline.theoryShort),
+                actualShort: round1(point.actualShort - baseline.actualShort),
+                synthetic: false,
+            };
+        });
+
+        if (!adjustedPoints.length) {
+            return null;
+        }
+
+        const chartPoints = [{
+            date: cloneChartDate(adjustedPoints[0].date),
+            theoryTotal: 0,
+            actualTotal: 0,
+            theoryLong: 0,
+            actualLong: 0,
+            theoryShort: 0,
+            actualShort: 0,
+            synthetic: true,
+        }].concat(adjustedPoints);
+
+        const weekly = payload.weekly.filter(function (item) {
+            return item.date >= range.start && item.date <= range.end;
+        }).map(function (item) {
+            return {
+                date: cloneChartDate(item.date),
+                actual: round1(item.actual),
+            };
+        });
+
+        let maxPoint = null;
+        let minPoint = null;
+        adjustedPoints.forEach(function (point) {
+            if (!maxPoint || point.actualTotal > maxPoint.actualTotal) {
+                maxPoint = point;
+            }
+            if (!minPoint || point.actualTotal < minPoint.actualTotal) {
+                minPoint = point;
+            }
+        });
+
+        return {
+            range: range,
+            points: chartPoints,
+            weekly: weekly,
+            maxPoint: maxPoint,
+            minPoint: minPoint,
+        };
+    }
+
+    function renderPerformanceLegend() {
+        if (!performanceLegend) {
+            return;
+        }
+
+        performanceLegend.innerHTML = "";
+        [
+            { label: "含滑價總損益", color: "#f4f7fb" },
+            { label: "理論總損益", color: "#a9b8ca", dashed: true },
+            { label: "多頭含滑價", color: "#ff7c70" },
+            { label: "多頭理論", color: "#ff7c70", dashed: true },
+            { label: "空頭含滑價", color: "#79d893" },
+            { label: "空頭理論", color: "#79d893", dashed: true },
+            { label: "期間最高點", color: "#ff7c70", marker: true },
+            { label: "期間最低點", color: "#79d893", marker: true },
+        ].forEach(function (item) {
+            const wrapper = document.createElement("span");
+            wrapper.className = "performance-legend-item";
+            wrapper.style.color = item.color;
+
+            const swatch = document.createElement("span");
+            swatch.className = "performance-legend-swatch";
+
+            const line = document.createElement("span");
+            line.className = "performance-legend-line";
+            if (item.dashed) {
+                line.classList.add("is-dashed");
+            }
+            if (item.marker) {
+                line.classList.add("is-marker");
+            }
+            swatch.appendChild(line);
+
+            const label = document.createElement("span");
+            label.textContent = item.label;
+
+            wrapper.append(swatch, label);
+            performanceLegend.appendChild(wrapper);
+        });
+    }
+
+    function renderPerformanceRangeButtons(activeKey) {
+        if (!performanceRangeList || !performanceChartPayload || !performanceChartPayload.rangeMap) {
+            return;
+        }
+
+        if (activeKey !== "all") {
+            performanceChartRangeGroup = getPerformanceGroupForKey(activeKey) || performanceChartRangeGroup;
+        }
+
+        performanceRangeGroupButtons.forEach(function (button) {
+            const active = button.dataset.performanceRangeGroup === performanceChartRangeGroup;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+
+        if (performanceRangeReset) {
+            const isAll = activeKey === "all";
+            performanceRangeReset.classList.toggle("is-active", isAll);
+            performanceRangeReset.setAttribute("aria-pressed", isAll ? "true" : "false");
+        }
+
+        performanceRangeList.innerHTML = "";
+        const group = PERFORMANCE_RANGE_GROUPS[performanceChartRangeGroup] || PERFORMANCE_RANGE_GROUPS.week;
+        group.keys.forEach(function (key) {
+            const range = performanceChartPayload.rangeMap[key] || null;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "performance-range-chip" + (key === activeKey ? " is-active" : "");
+            button.textContent = getPerformancePeriodLabel(key);
+            if (!range) {
+                button.disabled = true;
+                button.title = "目前區間無資料";
+            } else {
+                button.title = formatPerformanceRangeCaption(range);
+            }
+            button.addEventListener("click", function () {
+                if (!range) {
+                    return;
+                }
+                performanceChartRangeKey = key;
+                renderPerformanceCharts(performanceChartPayload, performanceChartRangeKey);
+            });
+            performanceRangeList.appendChild(button);
+        });
+    }
+
+    performanceRangeGroupButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const nextGroup = button.dataset.performanceRangeGroup;
+            if (!PERFORMANCE_RANGE_GROUPS[nextGroup]) {
+                return;
+            }
+            performanceChartRangeGroup = nextGroup;
+            renderPerformanceRangeButtons(performanceChartRangeKey);
+        });
+    });
+
+    if (performanceRangeReset) {
+        performanceRangeReset.addEventListener("click", function () {
+            performanceChartRangeKey = "all";
+            renderPerformanceCharts(performanceChartPayload, "all");
+        });
+    }
+
+    function renderPerformanceEmpty(message) {
+        if (performanceChartEmpty) {
+            performanceChartEmpty.hidden = false;
+            performanceChartEmpty.textContent = message;
+        }
+        performanceRangeGroupButtons.forEach(function (button) {
+            const active = button.dataset.performanceRangeGroup === performanceChartRangeGroup;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        if (performanceRangeReset) {
+            performanceRangeReset.classList.toggle("is-active", performanceChartRangeKey === "all");
+            performanceRangeReset.setAttribute("aria-pressed", performanceChartRangeKey === "all" ? "true" : "false");
+        }
+        clearNode(performanceRangeList);
+        clearNode(performanceLegend);
+        clearNode(performanceEquityChart);
+        clearNode(performanceWeeklyChart);
+    }
+
+    function renderPerformanceEquityChart(slice) {
+        if (!performanceEquityChart) {
+            return;
+        }
+
+        clearNode(performanceEquityChart);
+        performanceEquityChart.setAttribute("viewBox", "0 0 1000 340");
+
+        if (!slice || !Array.isArray(slice.points) || slice.points.length < 2) {
+            return;
+        }
+
+        const width = 1000;
+        const height = 340;
+        const margin = { top: 18, right: 22, bottom: 36, left: 86 };
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const series = [
+            { key: "actualTotal", color: "#f4f7fb", width: 2.4 },
+            { key: "theoryTotal", color: "#a9b8ca", width: 1.6, dashed: true },
+            { key: "actualLong", color: "#ff7c70", width: 1.8 },
+            { key: "theoryLong", color: "#ff7c70", width: 1.1, dashed: true, opacity: 0.7 },
+            { key: "actualShort", color: "#79d893", width: 1.8 },
+            { key: "theoryShort", color: "#79d893", width: 1.1, dashed: true, opacity: 0.7 },
+        ];
+
+        const values = [0];
+        slice.points.forEach(function (point) {
+            series.forEach(function (item) {
+                const value = Number(point[item.key]);
+                if (Number.isFinite(value)) {
+                    values.push(value);
+                }
+            });
+        });
+
+        if (slice.maxPoint && Number.isFinite(slice.maxPoint.actualTotal)) {
+            values.push(slice.maxPoint.actualTotal);
+        }
+        if (slice.minPoint && Number.isFinite(slice.minPoint.actualTotal)) {
+            values.push(slice.minPoint.actualTotal);
+        }
+
+        let yMin = Math.min.apply(null, values);
+        let yMax = Math.max.apply(null, values);
+        if (yMin === yMax) {
+            const delta = Math.max(Math.abs(yMin) * 0.1, 1);
+            yMin -= delta;
+            yMax += delta;
+        } else {
+            const padding = Math.max((yMax - yMin) * 0.08, 1);
+            yMin -= padding;
+            yMax += padding;
+        }
+
+        const xScale = function (index) {
+            if (slice.points.length === 1) {
+                return margin.left + plotWidth / 2;
+            }
+            return margin.left + (plotWidth * index / (slice.points.length - 1));
+        };
+        const yScale = function (value) {
+            return margin.top + ((yMax - value) / (yMax - yMin)) * plotHeight;
+        };
+
+        const horizontalTicks = 6;
+        for (let index = 0; index < horizontalTicks; index += 1) {
+            const ratio = index / (horizontalTicks - 1);
+            const y = margin.top + plotHeight * ratio;
+            const value = yMax - (yMax - yMin) * ratio;
+            performanceEquityChart.appendChild(createSvgNode("line", {
+                x1: margin.left,
+                y1: y,
+                x2: width - margin.right,
+                y2: y,
+                class: "performance-chart-grid",
+            }));
+            const label = createSvgNode("text", {
+                x: margin.left - 12,
+                y: y + 4,
+                "text-anchor": "end",
+                class: "performance-chart-label",
+            });
+            label.textContent = formatAxisMoney(value);
+            performanceEquityChart.appendChild(label);
+        }
+
+        chooseTickIndexes(slice.points.length, 6).forEach(function (pointIndex) {
+            const x = xScale(pointIndex);
+            const date = slice.points[pointIndex].date;
+            performanceEquityChart.appendChild(createSvgNode("line", {
+                x1: x,
+                y1: margin.top,
+                x2: x,
+                y2: height - margin.bottom,
+                class: "performance-chart-grid",
+            }));
+            const label = createSvgNode("text", {
+                x: x,
+                y: height - 12,
+                "text-anchor": pointIndex === 0 ? "start" : (pointIndex === slice.points.length - 1 ? "end" : "middle"),
+                class: "performance-chart-label",
+            });
+            label.textContent = formatChartDate(date, false);
+            performanceEquityChart.appendChild(label);
+        });
+
+        performanceEquityChart.appendChild(createSvgNode("line", {
+            x1: margin.left,
+            y1: height - margin.bottom,
+            x2: width - margin.right,
+            y2: height - margin.bottom,
+            class: "performance-chart-axis",
+        }));
+        performanceEquityChart.appendChild(createSvgNode("line", {
+            x1: margin.left,
+            y1: margin.top,
+            x2: margin.left,
+            y2: height - margin.bottom,
+            class: "performance-chart-axis",
+        }));
+
+        series.forEach(function (item) {
+            const path = slice.points.map(function (point, index) {
+                return (index ? "L" : "M") + xScale(index).toFixed(2) + " " + yScale(Number(point[item.key])).toFixed(2);
+            }).join(" ");
+            performanceEquityChart.appendChild(createSvgNode("path", {
+                d: path,
+                class: "performance-chart-series" + (item.dashed ? " is-dashed" : ""),
+                stroke: item.color,
+                "stroke-width": item.width,
+                opacity: item.opacity || 1,
+            }));
+        });
+
+        if (slice.maxPoint) {
+            const maxIndex = slice.points.findIndex(function (point) {
+                return point.date && slice.maxPoint.date && point.date.getTime() === slice.maxPoint.date.getTime()
+                    && Number(point.actualTotal) === Number(slice.maxPoint.actualTotal);
+            });
+            if (maxIndex >= 0) {
+                performanceEquityChart.appendChild(createSvgNode("circle", {
+                    cx: xScale(maxIndex),
+                    cy: yScale(slice.maxPoint.actualTotal),
+                    r: 4.5,
+                    fill: "#ff7c70",
+                    class: "performance-chart-marker",
+                }));
+            }
+        }
+
+        if (slice.minPoint) {
+            const minIndex = slice.points.findIndex(function (point) {
+                return point.date && slice.minPoint.date && point.date.getTime() === slice.minPoint.date.getTime()
+                    && Number(point.actualTotal) === Number(slice.minPoint.actualTotal);
+            });
+            if (minIndex >= 0) {
+                performanceEquityChart.appendChild(createSvgNode("circle", {
+                    cx: xScale(minIndex),
+                    cy: yScale(slice.minPoint.actualTotal),
+                    r: 4.5,
+                    fill: "#79d893",
+                    class: "performance-chart-marker",
+                }));
+            }
+        }
+    }
+
+    function renderPerformanceWeeklyChart(slice) {
+        if (!performanceWeeklyChart) {
+            return;
+        }
+
+        clearNode(performanceWeeklyChart);
+        performanceWeeklyChart.setAttribute("viewBox", "0 0 1000 220");
+
+        if (!slice || !Array.isArray(slice.weekly) || !slice.weekly.length) {
+            return;
+        }
+
+        const width = 1000;
+        const height = 220;
+        const margin = { top: 18, right: 22, bottom: 34, left: 86 };
+        const plotWidth = width - margin.left - margin.right;
+        const plotHeight = height - margin.top - margin.bottom;
+        const values = slice.weekly.map(function (item) { return Number(item.actual); }).filter(Number.isFinite);
+        const maxAbs = Math.max.apply(null, values.map(function (value) { return Math.abs(value); }).concat([1]));
+        const yScale = function (value) {
+            return margin.top + ((maxAbs - value) / (maxAbs * 2)) * plotHeight;
+        };
+        const zeroY = yScale(0);
+        const barSlot = plotWidth / Math.max(slice.weekly.length, 1);
+        const barWidth = Math.max(4, Math.min(24, barSlot * 0.62));
+
+        for (let index = 0; index < 5; index += 1) {
+            const ratio = index / 4;
+            const y = margin.top + plotHeight * ratio;
+            const value = maxAbs - (maxAbs * 2) * ratio;
+            performanceWeeklyChart.appendChild(createSvgNode("line", {
+                x1: margin.left,
+                y1: y,
+                x2: width - margin.right,
+                y2: y,
+                class: "performance-chart-grid",
+            }));
+            const label = createSvgNode("text", {
+                x: margin.left - 12,
+                y: y + 4,
+                "text-anchor": "end",
+                class: "performance-chart-label",
+            });
+            label.textContent = formatAxisMoney(value);
+            performanceWeeklyChart.appendChild(label);
+        }
+
+        performanceWeeklyChart.appendChild(createSvgNode("line", {
+            x1: margin.left,
+            y1: zeroY,
+            x2: width - margin.right,
+            y2: zeroY,
+            class: "performance-weekly-zero",
+        }));
+
+        slice.weekly.forEach(function (item, index) {
+            const x = margin.left + barSlot * index + (barSlot - barWidth) / 2;
+            const y = yScale(item.actual);
+            const rectY = Math.min(y, zeroY);
+            const rectHeight = Math.max(1, Math.abs(zeroY - y));
+            const tone = item.actual > 0 ? "is-positive" : (item.actual < 0 ? "is-negative" : "is-flat");
+            performanceWeeklyChart.appendChild(createSvgNode("rect", {
+                x: x,
+                y: rectY,
+                width: barWidth,
+                height: rectHeight,
+                rx: 2,
+                class: "performance-weekly-bar " + tone,
+            }));
+        });
+
+        chooseTickIndexes(slice.weekly.length, 6).forEach(function (itemIndex) {
+            const x = margin.left + barSlot * itemIndex + barSlot / 2;
+            const label = createSvgNode("text", {
+                x: x,
+                y: height - 10,
+                "text-anchor": itemIndex === 0 ? "start" : (itemIndex === slice.weekly.length - 1 ? "end" : "middle"),
+                class: "performance-chart-label",
+            });
+            label.textContent = formatChartDate(slice.weekly[itemIndex].date, false);
+            performanceWeeklyChart.appendChild(label);
+        });
+    }
+
+    function renderPerformanceCharts(report, requestedRangeKey) {
+        if (!performanceEquityChart || !performanceWeeklyChart) {
+            return;
+        }
+
+        if (report) {
+            performanceChartPayload = buildPerformancePayload(report);
+        }
+
+        if (!performanceChartPayload) {
+            renderPerformanceEmpty("等待回測驗證後顯示累積損益與週損益圖表。");
+            if (performanceChartNote) {
+                performanceChartNote.textContent = "等待回測驗證後顯示累積損益與週損益圖表。";
+            }
+            return;
+        }
+
+        const nextRangeKey = performanceChartPayload.rangeMap[requestedRangeKey]
+            ? requestedRangeKey
+            : (performanceChartPayload.rangeMap[performanceChartRangeKey]
+                ? performanceChartRangeKey
+                : getDefaultPerformanceRangeKey(performanceChartPayload.rangeMap));
+        performanceChartRangeKey = nextRangeKey;
+        if (nextRangeKey !== "all") {
+            performanceChartRangeGroup = getPerformanceGroupForKey(nextRangeKey) || performanceChartRangeGroup;
+        }
+
+        const slice = getPerformanceSlice(performanceChartPayload, nextRangeKey);
+        if (!slice) {
+            renderPerformanceEmpty("目前區間沒有足夠的期貨交易明細可供繪圖。");
+            if (performanceChartNote) {
+                performanceChartNote.textContent = "目前區間沒有足夠的期貨交易明細可供繪圖。";
+            }
+            return;
+        }
+
+        if (performanceChartEmpty) {
+            performanceChartEmpty.hidden = true;
+        }
+        renderPerformanceLegend();
+        renderPerformanceRangeButtons(nextRangeKey);
+        renderPerformanceEquityChart(slice);
+        renderPerformanceWeeklyChart(slice);
+
+        if (performanceChartNote) {
+            performanceChartNote.textContent = formatPerformanceRangeCaption(slice.range) + "，累積損益以區間起點歸零；週損益採含滑價實績。";
+        }
+    }
+
     function showPair(kicker, title, baseName, indicator, trading) {
         const safeTrading = protectTradingCode(trading, baseName + "_trading.xs");
         setVisible(pairOutput, true);
@@ -1654,6 +2566,7 @@ end;`,
             setText(metricMaxDrawdown, formatMetricMoney(report.summary.actualNet));
             setText(metricTradeCount, formatMetricCount(report.summary.tradeCount));
             renderYears(report.annualReturns);
+            renderPerformanceCharts(report, performanceChartRangeKey);
             setText(
                 futuresKpiNote,
                 "期貨口徑：每點 " + formatMetricCount(report.config.pointValue)
@@ -1669,6 +2582,8 @@ end;`,
         setText(metricMaxDrawdown, formatMetricPercent(fallbackMetrics.maxDrawdown));
         setText(metricTradeCount, formatMetricCount(fallbackMetrics.tradeCount));
         renderYears(fallbackMetrics.annualReturns);
+        performanceChartPayload = null;
+        renderPerformanceCharts(null, "year_6");
         setText(futuresKpiNote, "等待回放完成後，這裡會顯示期貨口徑的理論 / 含滑價 KPI。");
         renderFuturesKpiRows(null);
     }

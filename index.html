@@ -9,14 +9,14 @@
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
     <title>xs-core-engine</title>
-    <link rel="stylesheet" href="assets/gate.css?v=20260415m">
+    <link rel="stylesheet" href="assets/gate.css?v=20260416b">
     <script src="assets/gate-standalone.js?v=20260415i" defer></script>
     <script src="assets/bundled-data-config.js?v=20260415g" defer></script>
     <script src="assets/bundled-data-ui.js?v=20260415g" defer></script>
     <script src="assets/bundled-strategy-ui.js?v=20260415g" defer></script>
     <script src="assets/xq-upload-helpers.js?v=20260415j" defer></script>
     <script src="assets/futures-kpi.js?v=20260415c" defer></script>
-    <script src="assets/home-code-output.js?v=20260415p" defer></script>
+    <script src="assets/home-code-output.js?v=20260416b" defer></script>
 </head>
 <body class="is-locked">
     <div class="gate-layer" id="gate-layer" role="dialog" aria-modal="true" aria-label="首頁解鎖">
@@ -125,6 +125,48 @@
             <div class="annual-panel">
                 <span class="metric-label">近六年每年報酬率</span>
                 <div id="annual-return-list" class="annual-list"></div>
+            </div>
+
+            <div class="annual-panel performance-panel">
+                <div class="performance-head">
+                    <div>
+                        <span class="metric-label">期貨績效圖表</span>
+                        <p id="performance-chart-note" class="helper-text helper-compact">等待回測驗證後顯示累積損益與週損益圖表。</p>
+                    </div>
+                    <div class="performance-range-controls" aria-label="績效區間切換">
+                        <div id="performance-range-groups" class="performance-range-groups">
+                            <button type="button" class="performance-range-tab is-active" data-performance-range-group="week">週</button>
+                            <button type="button" class="performance-range-tab" data-performance-range-group="month">月</button>
+                            <button type="button" class="performance-range-tab" data-performance-range-group="year">年</button>
+                            <button type="button" class="performance-range-reset" id="performance-range-reset">全部</button>
+                        </div>
+                        <div id="performance-range-list" class="performance-range-list" aria-label="績效期間"></div>
+                    </div>
+                </div>
+
+                <div id="performance-legend" class="performance-legend" aria-label="圖例"></div>
+
+                <div id="performance-chart-empty" class="performance-empty" hidden>
+                    尚未有足夠的期貨交易明細可供繪圖。
+                </div>
+
+                <div class="performance-chart-stack">
+                    <section class="performance-chart-card" aria-labelledby="performance-equity-title">
+                        <div class="performance-chart-title-row">
+                            <h3 id="performance-equity-title" class="performance-chart-title">累積損益</h3>
+                            <span class="performance-chart-subtitle">理論 / 含滑價 / 多空拆分</span>
+                        </div>
+                        <svg id="performance-equity-chart" class="performance-chart-svg performance-chart-svg-equity" viewBox="0 0 1000 340" role="img" aria-label="累積損益圖表"></svg>
+                    </section>
+
+                    <section class="performance-chart-card" aria-labelledby="performance-weekly-title">
+                        <div class="performance-chart-title-row">
+                            <h3 id="performance-weekly-title" class="performance-chart-title">週損益</h3>
+                            <span class="performance-chart-subtitle">含滑價實際值</span>
+                        </div>
+                        <svg id="performance-weekly-chart" class="performance-chart-svg performance-chart-svg-weekly" viewBox="0 0 1000 220" role="img" aria-label="週損益圖表"></svg>
+                    </section>
+                </div>
             </div>
 
             <div class="annual-panel futures-kpi-panel">

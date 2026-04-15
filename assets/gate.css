@@ -546,8 +546,9 @@ textarea {
 .performance-range-controls {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 10px;
+    width: 100%;
     max-width: 100%;
 }
 
@@ -561,7 +562,15 @@ textarea {
 }
 
 .performance-range-list {
-    justify-content: flex-end;
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.performance-range-groups {
+    display: none;
 }
 
 .performance-range-tab,

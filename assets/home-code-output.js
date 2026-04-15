@@ -57,6 +57,12 @@
         year_5: { group: "year", span: 5 },
         year_6: { group: "year", span: 6 },
     };
+    const PERFORMANCE_RANGE_ORDER = [
+        "week_1", "week_2", "week_3", "week_4",
+        "month_1", "month_2", "month_3", "month_4", "month_5", "month_6",
+        "year_1", "year_2", "year_3", "year_4", "year_5", "year_6",
+        "all",
+    ];
     const PERFORMANCE_RANGE_OPTIONS = Object.keys(PERFORMANCE_PERIOD_DEFS).map(function (key) {
         const definition = PERFORMANCE_PERIOD_DEFS[key];
         return {
@@ -488,7 +494,6 @@ end;`,
     let bestModeAutoRunStarted = false;
     let fileModeBridgeAttempted = false;
     let performanceChartPayload = null;
-    let performanceChartRangeGroup = "year";
     let performanceChartRangeKey = "year_6";
 
     function setText(el, value) { if (el) { el.textContent = String(value ?? ""); } }
@@ -1697,10 +1702,11 @@ end;`,
         }
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
+        const day = date.getDate();
         if (compact) {
-            return String(year);
+            return year + "/" + month + "/" + day;
         }
-        return year + "/" + month;
+        return year + "/" + month + "/" + day;
     }
 
     function formatRangeCaption(range) {
@@ -1961,21 +1967,6 @@ end;`,
         );
     }
 
-    function getDefaultPerformanceRangeKeyForGroup(rangeMap, groupKey) {
-        const group = PERFORMANCE_RANGE_GROUPS[groupKey];
-        if (!rangeMap || !group) {
-            return null;
-        }
-
-        for (let index = group.keys.length - 1; index >= 0; index -= 1) {
-            const key = group.keys[index];
-            if (rangeMap[key]) {
-                return key;
-            }
-        }
-        return null;
-    }
-
     function getPerformanceSlice(payload, rangeKey) {
         if (!payload || !payload.rangeMap) {
             return null;
@@ -2164,6 +2155,31 @@ end;`,
         performanceRangeReset.addEventListener("click", function () {
             performanceChartRangeKey = "all";
             renderPerformanceCharts(null, "all");
+        });
+    }
+
+    function renderPerformanceRangeButtons(activeKey) {
+        if (!performanceRangeList || !performanceChartPayload || !performanceChartPayload.rangeMap) {
+            return;
+        }
+
+        performanceRangeList.innerHTML = "";
+        PERFORMANCE_RANGE_ORDER.forEach(function (key) {
+            const range = performanceChartPayload.rangeMap[key] || null;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "performance-range-chip" + (key === activeKey ? " is-active" : "");
+            button.textContent = key === "all" ? "全部" : getPerformancePeriodLabel(key);
+            button.title = range ? formatPerformanceRangeCaption(range) : "目前區間無資料";
+            button.disabled = !range;
+            button.addEventListener("click", function () {
+                if (!range) {
+                    return;
+                }
+                performanceChartRangeKey = key;
+                renderPerformanceCharts(null, key);
+            });
+            performanceRangeList.appendChild(button);
         });
     }
 

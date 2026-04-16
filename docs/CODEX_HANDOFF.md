@@ -1,6 +1,6 @@
 # Codex Handoff
 
-Last updated: 2026-04-15
+Last updated: 2026-04-16
 
 This file is the current cross-device handoff for `xs-core-engine`.
 On another computer, ask Codex to read this file first, then continue work.
@@ -142,6 +142,128 @@ Do not use `file:///.../index.html` for normal testing because the browser will 
 - The lower XQ comparison panel still uses the older verification presentation and can be further aligned with the new futures KPI format.
 - Some older docs in `docs/START_HERE.md` and `docs/PROJECT_STATE.md` show mojibake / encoding corruption and should be cleaned later.
 - Some legacy source strings outside the visible current homepage path may still need encoding cleanup.
+
+## 2026-04-16 Data And Export Update
+
+This section records the latest `M1 / D1` migration and export decisions.
+
+### DA Export Decision
+
+- The homepage and verification flow now treat `DA` as derived data.
+- Export mode should only expose:
+  - `M1`
+  - `D1`
+- `DA` is no longer needed as a user-facing export/upload artifact.
+- Important:
+  - internal `DA` derivation is still kept in runtime code through `D1 + M1`
+  - do not remove the internal derivation helpers unless the whole verification path is redesigned
+
+### Latest XQ Data Comparison Result
+
+New source files used:
+
+- `C:/XQ/data/M1.txt`
+- `C:/XQ/data/D1_XQ_TRUE.txt`
+
+Comparison outcome:
+
+- `D1`
+  - overlapping history matched the stored dataset
+  - safe action: append new rows
+  - latest stored date is now `20260414`
+- `M1`
+  - overlapping history was not a pure append all the way through
+  - divergence started from `202506`
+  - safe action: replace monthly shards from `202506` onward with the newly exported XQ data, instead of blindly appending
+  - latest stored timestamp is now `20260415 132800`
+
+Do not summarize this as "M1 and D1 were both fully identical."  
+The correct summary is:
+
+- `D1` overlap matched
+- `M1` required safe refresh from `202506+`
+- both datasets have already been updated to the latest state
+
+### Monthly Split State
+
+To improve persistence and future updates, stored market data was split by month.
+
+Current monthly bundle roots:
+
+- `data/bundled/legacy-01/m1/`
+- `data/bundled/legacy-01/d1/`
+
+The same monthly scheme was also propagated to:
+
+- `C:/Users/User/Documents/mqquant/01/bundle/data/m1/`
+- `C:/Users/User/Documents/mqquant/01/bundle/data/d1/`
+- `C:/xs_optimizer_v1/data/m1/`
+- `C:/xs_optimizer_v1/data/d1/`
+
+Homepage bundled data loading now uses the per-dataset `manifest.json` files under those monthly roots, instead of hardcoding every month shard path inside `assets/bundled-data-config.js`.
+
+### Current Latest Counts
+
+After dedupe and migration:
+
+- `M1`: `455,759`
+- `D1`: `1,522`
+
+Latest ends:
+
+- `M1`: `20260415 132800`
+- `D1`: `20260414`
+
+### Validation Status
+
+Validated after migration:
+
+- `tests/data-validation.test.mjs`: pass
+- `tests/trading-code-safety.test.mjs`: pass
+- `scripts/validate_data_bundle.mjs` against monthly bundle: `ok=true`
+- `mqquant/01` monthly loader: pass
+- `mqquant/02` / `C:/xs_optimizer_v1` monthly loader: pass
+
+### 2026-04-16 Homepage Headless Recheck
+
+Rechecked against the actual rendered homepage DOM with headless Edge after the monthly data migration, using:
+
+- built-in `M1 / D1`
+- current homepage default indicator / trading output
+- gate slippage `2`
+- one explicit `更新並比對` click after unlock
+
+Observed on the rendered homepage:
+
+- compare status: `已算出模擬TXT`
+- simulated events: `622`
+- top KPI card 1: `1,501,567`
+- top KPI card 2: `1,252,767`
+- top KPI card 3: `311`
+
+Important:
+
+- these values differ from the older `2026-04-15` verified baseline above
+- likely inference: the later `M1` refresh from `202506+` changed replay output, but this has not yet been traced to a specific date slice
+- the new lower `期貨 KPI 對照` table is confirmed to render correctly in the `no XQ uploaded yet` state
+- a fully automated headless check of the populated `XQ TXT / CSV` path was blocked by browser file-input security, so that part still needs either:
+  - a manual browser upload check
+  - or a dedicated automation harness that can drive real file chooser behavior
+
+### Important Reminder For The Next Session
+
+If the user asks whether only `M1 / D1` are needed:
+
+- answer: yes, user-facing flow only needs `M1 + D1`
+- explain that `DA` is still derived internally and therefore is not a required upload/export target
+
+If the user asks whether the new files matched the old files:
+
+- do not answer "both fully matched"
+- answer:
+  - `D1` overlap matched
+  - `M1` did not remain a pure append from `202506` onward, so later months were refreshed safely
+  - latest data has already been merged and stored
 
 ## Suggested Prompt On The Next Computer
 

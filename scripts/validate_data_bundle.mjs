@@ -12,7 +12,7 @@ import {
 
 const HELP_TEXT = `
 Usage:
-  node scripts/validate_data_bundle.mjs --m1 <path> --d1 <path> [--anchors <path>] [options]
+  node scripts/validate_data_bundle.mjs --m1 <path-or-dir> --d1 <path-or-dir> [--anchors <path>] [options]
 
 Options:
   --m1-format <auto|legacy|csv>       M1 input format. Default: auto
@@ -25,6 +25,38 @@ Options:
 
 function normalizeNewlines(text) {
     return String(text ?? "").replace(/\r\n/g, "\n");
+}
+
+async function readDatasetInput(inputPath) {
+    const stat = await fs.stat(inputPath);
+    if (!stat.isDirectory()) {
+        return fs.readFile(inputPath, "utf8");
+    }
+
+    const entries = await fs.readdir(inputPath, { withFileTypes: true });
+    const partNames = entries
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name)
+        .filter((name) => /\.(txt|csv)$/i.test(name))
+        .filter((name) => !/^manifest\.json$/i.test(name))
+        .sort((left, right) => left.localeCompare(right, "en"));
+
+    if (!partNames.length) {
+        throw new Error(`No .txt or .csv files found in directory: ${inputPath}`);
+    }
+
+    const parts = await Promise.all(
+        partNames.map((name) => fs.readFile(path.join(inputPath, name), "utf8")),
+    );
+
+    const lines = parts.flatMap((text) =>
+        normalizeNewlines(text)
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean),
+    );
+
+    return lines.length ? `${lines.join("\n")}\n` : "";
 }
 
 function firstMeaningfulLine(text) {
@@ -205,8 +237,8 @@ async function main() {
         return;
     }
 
-    const m1Text = await fs.readFile(args.m1Path, "utf8");
-    const d1Text = await fs.readFile(args.d1Path, "utf8");
+    const m1Text = await readDatasetInput(args.m1Path);
+    const d1Text = await readDatasetInput(args.d1Path);
     const anchorsText = args.anchorsPath ? await fs.readFile(args.anchorsPath, "utf8") : "";
 
     const m1Parsed = parseBars(m1Text, {

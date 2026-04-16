@@ -6,7 +6,7 @@
             description: "從已驗證資料、最佳參數與 artifact memory，往正式成對 XS 生成流程前進。",
             steps: [
                 "先打開 docs/HIGHEST_SPEC_V2.md，確認這次輸出仍以 V2 為唯一法源。",
-                "確認你手上的 M1 / D1 / DailyAnchor 與 best params 已準備好。",
+                "確認你手上的 M1 / D1 與 best params 已準備好。",
                 "下一句直接叫我：依 V2 幫我做最佳報酬配對的 indicator / trading。"
             ],
             files: [
@@ -57,11 +57,11 @@
         export: {
             tag: "模式 04",
             title: "匯出 XQ 資料腳本",
-            description: "生成 XQ 匯出腳本，先把 M1 / D1 / DailyAnchor 正式拉成可驗證資料。",
+            description: "生成 XQ 匯出腳本，先把 M1 / D1 正式拉成可驗證資料。",
             steps: [
                 "先確認你要匯出的頻率、檔案格式與落地路徑。",
                 "打開 DATA_CONTRACT 與 exporter templates，確認輸出欄位。",
-                "下一句直接叫我：幫我生成 XQ 的 M1 / D1 / DailyAnchor 匯出腳本。"
+                "下一句直接叫我：幫我生成 XQ 的 M1 / D1 匯出腳本。"
             ],
             files: [
                 { label: "資料契約", href: "docs/DATA_CONTRACT.md" },
@@ -70,7 +70,7 @@
             ],
             primary: { label: "開啟資料契約", href: "docs/DATA_CONTRACT.md" },
             secondary: { label: "開啟 M1 匯出模板", href: "templates/exporters/m1_export.xs" },
-            prompt: "依 docs/HIGHEST_SPEC_V2.md 與 docs/DATA_CONTRACT.md，幫我生成 XQ 的 M1 / D1 / DailyAnchor 匯出腳本。"
+            prompt: "依 docs/HIGHEST_SPEC_V2.md 與 docs/DATA_CONTRACT.md，幫我生成 XQ 的 M1 / D1 匯出腳本。"
         }
     };
 

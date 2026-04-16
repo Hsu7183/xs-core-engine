@@ -1,99 +1,94 @@
 # START HERE
 
-這份文件是未來任何一台電腦上打開 `xs-core-engine` 時的第一份入口文件。
+Last updated: 2026-04-16
 
-如果是人或 Codex 第一次接手這個專案，請先讀這份，再依順序讀其他文件。
+This file is the clean entry point for future Codex sessions.
+Read it first when resuming work in this repository.
 
-## 1. 先讀順序
+## Read Order
 
-固定順序如下：
+1. `docs/CODEX_HANDOFF.md`
+2. `README.md`
+3. `index.html`
+4. `docs/HIGHEST_SPEC_V2.md`
+5. `docs/ENGINE_STANDARD.md`
 
-1. `docs/START_HERE.md`
-2. `docs/HIGHEST_SPEC_V2.md`
-3. `docs/PROJECT_STATE.md`
-4. `docs/DATA_CONTRACT.md`
-5. `docs/ARTIFACT_SCHEMA.md`
-6. `docs/DATA_PIPELINE.md`
-7. `docs/BACKUP_01_INTEGRATION.md`
+Then branch based on the task:
 
-## 2. 這個專案真正要做什麼
+- Homepage / verification work:
+  - `assets/home-code-output.js`
+  - `assets/futures-kpi.js`
+  - `assets/bundled-data-ui.js`
+  - `assets/xq-upload-helpers.js`
+- Data refresh / bundle work:
+  - `docs/DATA_CONTRACT.md`
+  - `src/data/normalize.js`
+  - `scripts/validate_data_bundle.mjs`
+  - `scripts/migrate_monthly_market_data.py`
+- XS generation / renderer work:
+  - `templates/base_indicator.xs`
+  - `templates/base_trading.xs`
+  - `docs/ARCHITECTURE.md`
+  - `docs/ARTIFACT_SCHEMA.md`
 
-`xs-core-engine` 的正式目標不是做花俏首頁，也不是做一般 code generator。
+## Current Reality
 
-它要做的是：
+- The product path is browser-first:
+  - HTML / CSS / JS homepage
+  - XS outputs
+  - Git-backed artifacts and repo memory
+- User-facing data flow now needs only `M1 + D1`.
+- `DA` remains an internal derived layer and is not a required upload/export target.
+- Built-in market data is stored as monthly shards under:
+  - `data/bundled/legacy-01/m1/`
+  - `data/bundled/legacy-01/d1/`
+- Homepage bundle loading now resolves shard files from each dataset's `manifest.json` instead of hardcoding every month path.
 
-- 接收策略邏輯或舊 XS 程式碼
-- 依 `V2` 最高規範重構
-- 生成正式 `指標版 XS`
-- 生成正式 `交易版 XS`
-- 保證 `C1~C5` 同核、`C6` 才分岔
-- 在生成前先驗證資料
-- 在生成後保留最佳參數與成果物記憶
+## Current Data Snapshot
 
-## 3. 唯一法源
+- `M1` rows: `455,759`
+- `M1` latest timestamp: `20260415 132800`
+- `D1` rows: `1,522`
+- `D1` latest date: `20260414`
 
-正式法源只有一份：
+Important historical note:
 
-- `docs/HIGHEST_SPEC_V2.md`
+- `D1` overlap matched and was safely appended.
+- `M1` was not a pure append from `202506` onward, so later months were safely refreshed.
 
-所有舊策略、舊模板、舊工具、`backup/01`、歷史習慣，都只能當參考，不能凌駕 V2。
+## Homepage Status
 
-## 4. 正式工程方向
+- Unlock flow is:
+  1. password
+  2. single-side slippage
+  3. homepage unlock
+- Built-in `M1 / D1` plus the default strategy auto-run after unlock.
+- The top KPI block uses futures-style theory vs actual-with-slippage calculations.
+- The lower comparison area now includes a futures KPI comparison table for simulation vs XQ-derived metrics.
 
-這個專案的正式產品方向是：
+## How To Run
 
-- `XS / XScript` 作為 XQ 端腳本
-- `HTML / CSS / JavaScript` 作為工作台與正式應用邏輯
-- GitHub repo 作為跨電腦共享記憶
+Use:
 
-注意：
+- `start-local-site.cmd`
 
-- 現有 Python 檔案可作為早期 bootstrap 或參考樣本
-- 但未來正式最佳化與正式工作台，不應依賴 Python 才能運作
+Then open:
 
-## 5. 目前固定工作順序
+- `http://127.0.0.1:8765/index.html`
 
-之後所有新工作，預設依這個順序進行：
+Do not use `file:///.../index.html` for normal testing because bundled text fetches will be blocked by the browser.
 
-1. 確認資料格式與驗證規則
-2. 確認策略法源與策略特例
-3. 先產出指標版
-4. 再產出交易版
-5. 驗證雙版本一致性
-6. 記錄最佳參數與成果物
+## Practical Reminders
 
-## 6. 當前要避免的事情
+- Prefer JavaScript for new runtime logic. Do not expand Python for new product-side workflow unless it is clearly tooling-only.
+- Do not answer "M1 and D1 fully matched" for the latest refresh.
+- If asked whether only `M1 / D1` are needed, answer yes for the user-facing flow and explain that `DA` is still derived internally.
+- Check for existing uncommitted changes before making assumptions about the worktree.
 
-未經明確確認前，不要做以下行為：
+## Recommended Next Step
 
-- 不要把 `backup/01` 當正式法源
-- 不要直接沿用舊 Python 生成器
-- 不要直接把大量原始歷史資料塞進主 repo
-- 不要新增違反 V2 的 XS 寫法
-- 不要讓指標版與交易版在 `C1~C5` 出現差異
-- 不要把本機硬編碼路徑當成正式設計
+If no more specific user request is given, continue from one of these:
 
-## 7. 下一個正式里程碑
-
-截至 `2026-04-14`，建議的下一個正式里程碑是：
-
-- 完成資料相容層
-- 同時支援舊 `01` 的 `M1/D1` 格式與新 XQ 匯出格式
-- 在資料驗證完成後，再往最佳化記憶層與正式生成器前進
-
-## 8. 若是 Codex 接手，第一句應該怎麼做
-
-若未來 Codex 在另一台電腦接手，建議先：
-
-1. 讀 `docs/HIGHEST_SPEC_V2.md`
-2. 讀 `docs/PROJECT_STATE.md`
-3. 讀 `docs/DATA_CONTRACT.md`
-4. 再決定目前任務屬於：
-   - 資料層
-   - 舊策略重構
-   - 正式生成
-   - 最佳化記憶
-
-## 9. 專案接續原則
-
-只要這些文件有更新並已推到 GitHub，未來任何電腦上的 Codex 都應該先以 repo 內文件為準，再接續工作，而不是要求使用者重講整個背景。
+1. Manual browser verification of the populated `XQ TXT / CSV` upload path.
+2. Automation for real file-input upload checks.
+3. Resume spec-first paired XS renderer work on top of the now-stable monthly data path.

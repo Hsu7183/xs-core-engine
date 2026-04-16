@@ -13,3 +13,10 @@ __pycache__/
 generated/
 dist/
 build/
+
+# local cleanup snapshots / throwaway exports
+_clean_head/
+_clean_repo/
+debug-auto-run.html
+latest-auto-dom.html
+latest-dom.html

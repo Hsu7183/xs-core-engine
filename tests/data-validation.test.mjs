@@ -44,7 +44,7 @@ test("validateDataBundle rejects invalid ts14 and missing previous d1", () => {
     assert.equal(result.ok, false);
     assert.ok(codes.includes("m1_invalid_ts14"));
     assert.ok(codes.includes("bundle_missing_d1"));
-    assert.ok(codes.includes("bundle_m1_missing_previous_d1"));
+    assert.ok(codes.includes("bundle_m1_missing_previous_d1_at_bundle_start"));
 });
 
 test("validateDataBundle warns when dedupe removes repeated rows", () => {
@@ -69,6 +69,25 @@ test("validateDataBundle can downgrade missing daily anchors to a warning", () =
 
     assert.equal(result.ok, true);
     assert.ok(result.issues.some((issue) => issue.code === "bundle_missing_daily_anchors_rebuild_required"));
+});
+
+test("validateDataBundle treats missing previous D1 on the first bundle trading day as a warning", () => {
+    const result = validateDataBundle({
+        m1Bars: [
+            { ts14: "20260414090000", date: 20260414, time: 90000, open: 100, high: 110, low: 95, close: 105, volume: 10, source_format: "xq_m1_csv" },
+        ],
+        d1Bars: [
+            { ts14: "20260414000000", date: 20260414, time: 0, open: 90, high: 120, low: 80, close: 100, volume: 999, source_format: "xq_d1_csv" },
+        ],
+        dailyAnchors: [],
+    }, {
+        requireVolume: true,
+        allowDailyAnchorRebuild: true,
+    });
+
+    assert.equal(result.ok, true);
+    assert.ok(result.issues.some((issue) => issue.code === "bundle_m1_missing_previous_d1_at_bundle_start"));
+    assert.ok(!result.issues.some((issue) => issue.code === "bundle_m1_missing_previous_d1"));
 });
 
 test("buildDataSignature is stable for deduped sorted rows", () => {

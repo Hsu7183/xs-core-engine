@@ -763,6 +763,7 @@ function buildBundleIssues(
 ) {
     const issues = [];
     const m1Dates = getUniqueSortedDates(m1Rows);
+    const firstM1Date = m1Dates.length ? m1Dates[0] : null;
     const d1Dates = getUniqueSortedDates(d1Rows);
     const dailyAnchorDateCounts = buildDateCountMap(dailyAnchorRows);
     const dailyAnchorDates = [...dailyAnchorDateCounts.keys()].sort((left, right) => left - right);
@@ -803,6 +804,16 @@ function buildBundleIssues(
     if (requireD1 || d1Rows.length > 0) {
         m1Dates.forEach((date) => {
             if (!hasPreviousDate(d1Dates, date)) {
+                if (date === firstM1Date) {
+                    issues.push({
+                        code: "bundle_m1_missing_previous_d1_at_bundle_start",
+                        severity: "warning",
+                        date,
+                        message: `M1 trading date ${date} is the first trading day in the bundle and does not have an earlier D1 row.`,
+                    });
+                    return;
+                }
+
                 issues.push({
                     code: "bundle_m1_missing_previous_d1",
                     severity: "error",

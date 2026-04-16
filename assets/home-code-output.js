@@ -374,6 +374,7 @@ end;`,
 
     const modeButtons = Array.from(document.querySelectorAll("[data-mode]"));
     const bestMetricsPanel = document.getElementById("best-metrics-panel");
+    const bestMetricsHead = bestMetricsPanel ? bestMetricsPanel.querySelector(".panel-head") : null;
     const bestUploadPanel = document.getElementById("best-upload-panel");
     const refactorUploadPanel = document.getElementById("refactor-upload-panel");
     const metricLabels = bestMetricsPanel ? Array.from(bestMetricsPanel.querySelectorAll(".metric-grid .metric-label")) : [];
@@ -436,6 +437,7 @@ end;`,
     const tradingOutput = document.getElementById("trading-output");
     const exportM1Output = document.getElementById("export-m1-output");
     const exportD1Output = document.getElementById("export-d1-output");
+    const bundledDatasetConfig = window.__XS_REPO_DATA_BUNDLE?.datasets || {};
     const bundledDataUi = window.__XSBundledData || null;
     const bundledStrategyUi = window.__XSBundledStrategyUi || null;
     const xqUploadHelpers = window.__XSXqUpload || null;
@@ -446,6 +448,17 @@ end;`,
     let fileModeBridgeAttempted = false;
     let performanceChartPayload = null;
     let performanceChartRangeKey = "year_6";
+    let bestDataHealthPanel = document.getElementById("best-data-health");
+    if (!bestDataHealthPanel && bestMetricsPanel) {
+        bestDataHealthPanel = document.createElement("div");
+        bestDataHealthPanel.id = "best-data-health";
+        bestDataHealthPanel.className = "data-health-list";
+        if (bestMetricsHead) {
+            bestMetricsHead.insertAdjacentElement("afterend", bestDataHealthPanel);
+        } else {
+            bestMetricsPanel.prepend(bestDataHealthPanel);
+        }
+    }
 
     function setText(el, value) { if (el) { el.textContent = String(value ?? ""); } }
     function setStatusText(el, value) {
@@ -461,6 +474,198 @@ end;`,
             el.hidden = !visible;
             el.style.display = visible ? "" : "none";
         }
+    }
+    function parseDateDigits(value) {
+        const digits = String(value || "").replace(/\D+/g, "").slice(0, 8);
+        if (digits.length !== 8) {
+            return null;
+        }
+        return {
+            year: toInt(digits.slice(0, 4), 0),
+            month: toInt(digits.slice(4, 6), 0),
+            day: toInt(digits.slice(6, 8), 0),
+        };
+    }
+    function parseTimeDigits(value) {
+        const digits = String(value || "").replace(/\D+/g, "").padStart(6, "0").slice(-6);
+        return {
+            hour: toInt(digits.slice(0, 2), 0),
+            minute: toInt(digits.slice(2, 4), 0),
+            second: toInt(digits.slice(4, 6), 0),
+        };
+    }
+    function makeLocalDate(parts) {
+        if (!parts || !parts.year || !parts.month || !parts.day) {
+            return null;
+        }
+        return new Date(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0);
+    }
+    function addLocalDays(date, days) {
+        if (!(date instanceof Date)) {
+            return null;
+        }
+        const next = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
+        next.setDate(next.getDate() + days);
+        return next;
+    }
+    function isBusinessDay(date) {
+        const weekday = date instanceof Date ? date.getDay() : NaN;
+        return weekday >= 1 && weekday <= 5;
+    }
+    function previousBusinessDay(date) {
+        let next = addLocalDays(date, -1);
+        while (next && !isBusinessDay(next)) {
+            next = addLocalDays(next, -1);
+        }
+        return next;
+    }
+    function nextBusinessDay(date) {
+        let next = addLocalDays(date, 1);
+        while (next && !isBusinessDay(next)) {
+            next = addLocalDays(next, 1);
+        }
+        return next;
+    }
+    function formatRocDate(date) {
+        if (!(date instanceof Date)) {
+            return "未提供";
+        }
+        return String(date.getFullYear() - 1911) + "/" + String(date.getMonth() + 1) + "/" + String(date.getDate());
+    }
+    function formatRocDateTime(dateText, timeText) {
+        const dateParts = parseDateDigits(dateText);
+        if (!dateParts) {
+            return "未提供";
+        }
+        const dateLabel = String(dateParts.year - 1911) + "/" + String(dateParts.month) + "/" + String(dateParts.day);
+        if (!timeText) {
+            return dateLabel;
+        }
+        const timeParts = parseTimeDigits(timeText);
+        return dateLabel
+            + " "
+            + String(timeParts.hour).padStart(2, "0")
+            + ":"
+            + String(timeParts.minute).padStart(2, "0");
+    }
+    function formatBundledRangeRoc(dataset) {
+        if (!dataset || !dataset.range) {
+            return "未提供";
+        }
+        return formatRocDateTime(dataset.range.startDate, dataset.range.startTime)
+            + " - "
+            + formatRocDateTime(dataset.range.endDate, dataset.range.endTime);
+    }
+    function expectedBundledLatestDate(kind) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+        const latestM1 = previousBusinessDay(today);
+        if (!latestM1) {
+            return null;
+        }
+        return kind === "d1" ? previousBusinessDay(latestM1) : latestM1;
+    }
+    function createDataHealthFragment(text, className, styles) {
+        const span = document.createElement("span");
+        span.className = className;
+        span.textContent = text;
+        Object.assign(span.style, styles || {});
+        return span;
+    }
+    function buildBundledFreshnessStatus(kind, dataset) {
+        if (!dataset || !dataset.range) {
+            return {
+                expected: null,
+                statusText: "尚未提供資料",
+                statusClass: "is-missing",
+            };
+        }
+
+        const expected = expectedBundledLatestDate(kind);
+        const actualEnd = makeLocalDate(parseDateDigits(dataset.range.endDate));
+        if (!actualEnd || !expected) {
+            return {
+                expected: expected,
+                statusText: "無法判斷最新日",
+                statusClass: "is-neutral",
+            };
+        }
+
+        if (actualEnd.getTime() < expected.getTime()) {
+            const missingStart = nextBusinessDay(actualEnd) || actualEnd;
+            return {
+                expected: expected,
+                statusText: "欠缺 " + formatRocDate(missingStart) + " - " + formatRocDate(expected),
+                statusClass: "is-missing",
+            };
+        }
+
+        return {
+            expected: expected,
+            statusText: "已對齊",
+            statusClass: "is-ok",
+        };
+    }
+    function renderBundledFreshnessRows() {
+        if (!bestDataHealthPanel) {
+            return;
+        }
+
+        const entries = [
+            { kind: "m1", label: "M1" },
+            { kind: "d1", label: "D1" },
+        ];
+        Object.assign(bestDataHealthPanel.style, {
+            display: "grid",
+            gap: "10px",
+            margin: "0 0 18px",
+        });
+        bestDataHealthPanel.replaceChildren();
+
+        entries.forEach(function (entry) {
+            const dataset = bundledDatasetConfig && bundledDatasetConfig[entry.kind] ? bundledDatasetConfig[entry.kind] : null;
+            const status = buildBundledFreshnessStatus(entry.kind, dataset);
+            const row = document.createElement("div");
+            row.className = "data-health-row";
+            Object.assign(row.style, {
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "baseline",
+                gap: "8px 14px",
+                padding: "12px 14px",
+                border: "1px solid rgba(149, 180, 197, 0.12)",
+                borderRadius: "16px",
+                background: "rgba(255, 255, 255, 0.03)",
+            });
+            row.appendChild(createDataHealthFragment(entry.label, "data-health-label", {
+                minWidth: "34px",
+                color: "rgba(244, 247, 251, 0.94)",
+                fontSize: "13px",
+                fontWeight: "700",
+                letterSpacing: "0.08em",
+            }));
+            row.appendChild(createDataHealthFragment("資料期間 " + formatBundledRangeRoc(dataset), "data-health-range", {
+                color: "rgba(236, 246, 247, 0.64)",
+                fontSize: "13px",
+                lineHeight: "1.6",
+            }));
+            if (status.expected) {
+                row.appendChild(createDataHealthFragment("應更新至 " + formatRocDate(status.expected), "data-health-expected", {
+                    color: "rgba(236, 246, 247, 0.64)",
+                    fontSize: "13px",
+                    lineHeight: "1.6",
+                }));
+            }
+            row.appendChild(createDataHealthFragment(status.statusText, "data-health-status " + status.statusClass, {
+                color: status.statusClass === "is-missing"
+                    ? "var(--danger)"
+                    : (status.statusClass === "is-ok" ? "rgba(121, 216, 147, 0.92)" : "rgba(236, 246, 247, 0.64)"),
+                fontSize: "13px",
+                fontWeight: "700",
+                lineHeight: "1.6",
+            }));
+            bestDataHealthPanel.appendChild(row);
+        });
     }
     function findExecutableTradingPrintLines(code) {
         const lines = String(code || "").replace(/\r\n/g, "\n").split("\n");
@@ -799,6 +1004,7 @@ end;`,
             m1Target: bestM1Summary,
             d1Target: bestD1Summary,
         });
+        renderBundledFreshnessRows();
     }
     function renderBundledStrategySummaries(pair, bestId) {
         if (!bundledStrategyUi || !pair) {

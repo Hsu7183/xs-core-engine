@@ -487,6 +487,19 @@ end;`,
     }
 
     function setText(el, value) { if (el) { el.textContent = String(value ?? ""); } }
+    function logRenderError(scope, error) {
+        if (window.console && typeof window.console.error === "function") {
+            window.console.error("[xs-home] render failed:", scope, error);
+        }
+    }
+    function runNonCriticalRender(scope, renderFn) {
+        try {
+            return renderFn();
+        } catch (error) {
+            logRenderError(scope, error);
+            return null;
+        }
+    }
     function setStatusText(el, value) {
         if (!el) {
             return;
@@ -3400,8 +3413,12 @@ end;`,
             setText(metricTotalReturn, formatMetricMoney(report.summary.theoryNet));
             setText(metricMaxDrawdown, formatMetricMoney(report.summary.actualNet));
             setText(metricTradeCount, formatMetricCount(report.summary.tradeCount));
-            renderYears(report.annualReturns);
-            renderPerformanceCharts(report, performanceChartRangeKey);
+            runNonCriticalRender("best-metrics/annual-returns", function () {
+                renderYears(report.annualReturns);
+            });
+            runNonCriticalRender("best-metrics/performance-charts", function () {
+                renderPerformanceCharts(report, performanceChartRangeKey);
+            });
             setText(
                 futuresKpiNote,
                 "期貨口徑：每點 " + formatMetricCount(report.config.pointValue)
@@ -3409,20 +3426,32 @@ end;`,
                     + "、交易稅率 " + Number(report.config.taxRate).toFixed(5)
                     + "、單邊滑點 " + formatCompactNumber(report.config.slipPerSide) + " 點。"
             );
-            renderFuturesKpiRows(report);
-            renderTradeDetailRows(report);
+            runNonCriticalRender("best-metrics/futures-kpi-rows", function () {
+                renderFuturesKpiRows(report);
+            });
+            runNonCriticalRender("best-metrics/trade-detail-rows", function () {
+                renderTradeDetailRows(report);
+            });
             return;
         }
 
         setText(metricTotalReturn, formatMetricPercent(fallbackMetrics.totalReturn));
         setText(metricMaxDrawdown, formatMetricPercent(fallbackMetrics.maxDrawdown));
         setText(metricTradeCount, formatMetricCount(fallbackMetrics.tradeCount));
-        renderYears(fallbackMetrics.annualReturns);
+        runNonCriticalRender("best-metrics/fallback-annual-returns", function () {
+            renderYears(fallbackMetrics.annualReturns);
+        });
         performanceChartPayload = null;
-        renderPerformanceCharts(null, "year_6");
+        runNonCriticalRender("best-metrics/fallback-performance-charts", function () {
+            renderPerformanceCharts(null, "year_6");
+        });
         setText(futuresKpiNote, "等待回放完成後，這裡會顯示期貨口徑的理論 / 含滑價 KPI。");
-        renderFuturesKpiRows(null);
-        renderTradeDetailRows(null);
+        runNonCriticalRender("best-metrics/fallback-futures-kpi-rows", function () {
+            renderFuturesKpiRows(null);
+        });
+        runNonCriticalRender("best-metrics/fallback-trade-detail-rows", function () {
+            renderTradeDetailRows(null);
+        });
     }
 
     function resetComparePanel() {
@@ -3489,13 +3518,21 @@ end;`,
         setVisible(bestUploadPanel, true);
         setVisible(bestComparePanel, true);
         setVisible(refactorUploadPanel, false);
-        renderBundledDatasetSummaries();
-        renderBundledStrategySummaries({ indicator: nextIndicator, trading: nextTrading }, bestId);
-        renderTradeDetailSummary(Array.from(bestXqTxtUpload?.files || []), displayVerification);
         renderBestMetrics(displayVerification);
         renderComparePanel(displayVerification);
         applyCompareSettings(displayVerification && displayVerification.settings ? displayVerification.settings : null);
-        showPair("歷史最佳", "最佳報酬配對", bestId, nextIndicator, nextTrading);
+        runNonCriticalRender("best-mode/bundled-dataset-summaries", function () {
+            renderBundledDatasetSummaries();
+        });
+        runNonCriticalRender("best-mode/bundled-strategy-summaries", function () {
+            renderBundledStrategySummaries({ indicator: nextIndicator, trading: nextTrading }, bestId);
+        });
+        runNonCriticalRender("best-mode/trade-detail-summary", function () {
+            renderTradeDetailSummary(Array.from(bestXqTxtUpload?.files || []), displayVerification);
+        });
+        runNonCriticalRender("best-mode/show-pair", function () {
+            showPair("歷史最佳", "最佳報酬配對", bestId, nextIndicator, nextTrading);
+        });
         setStatusText(
             bestUploadStatus,
             saved?.lastStatus

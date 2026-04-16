@@ -2121,16 +2121,10 @@ end;`,
             && leftWeek.getTime() === rightWeek.getTime()
         );
     }
-    function getChartWeekDisplayDate(weekStart, overallLastDate) {
+    function getChartWeekDisplayDate(weekStart) {
         const friday = addChartDays(weekStart, 4);
         if (!friday) {
-            return normalizeChartDate(overallLastDate) || normalizeChartDate(weekStart);
-        }
-        if (isSameChartWeek(weekStart, overallLastDate)) {
-            const lastDate = normalizeChartDate(overallLastDate);
-            if (lastDate && lastDate.getTime() < friday.getTime()) {
-                return lastDate;
-            }
+            return normalizeChartDate(weekStart);
         }
         return friday;
     }
@@ -2262,6 +2256,21 @@ end;`,
         return chooseTickIndexes(dates.length, maxTickCount || 6).map(function (index) {
             return dates[index];
         });
+    }
+    function buildPerformanceSlotDates(slice) {
+        const dates = [];
+        const seen = new Set();
+        (slice?.weekly || []).forEach(function (item) {
+            const date = item && item.date instanceof Date ? normalizeChartDate(item.date) : null;
+            const key = date ? String(date.getTime()) : "";
+            if (!key || seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            dates.push(date);
+        });
+        dates.sort(function (left, right) { return left - right; });
+        return dates;
     }
     function createPerformanceXScale(domain, margin, plotWidth) {
         return function (date) {
@@ -2475,7 +2484,7 @@ end;`,
             const bucket = existing
                 ? {
                     weekStart: cloneChartDate(existing.weekStart),
-                    date: getChartWeekDisplayDate(existing.weekStart, lastDate),
+                    date: getChartWeekDisplayDate(existing.weekStart),
                     theory: round1(existing.theory),
                     actual: round1(existing.actual),
                     theoryTotal: round1(existing.theoryTotal),
@@ -2487,7 +2496,7 @@ end;`,
                 }
                 : {
                     weekStart: cloneChartDate(cursor),
-                    date: getChartWeekDisplayDate(cursor, lastDate),
+                    date: getChartWeekDisplayDate(cursor),
                     theory: 0,
                     actual: 0,
                     theoryTotal: round1(rollingTotals.theoryTotal),
@@ -2545,10 +2554,13 @@ end;`,
             };
         });
 
+        const displayFirstDate = cloneChartDate(weeklyBuckets[0].date);
+        const displayLastDate = cloneChartDate(weeklyBuckets[weeklyBuckets.length - 1].date);
+
         return {
             points: points,
             weekly: weekly,
-            rangeMap: buildPerformanceRangeCatalog(firstDate, lastDate, points),
+            rangeMap: buildPerformanceRangeCatalog(displayFirstDate, displayLastDate, points),
         };
     }
 
@@ -2859,6 +2871,7 @@ end;`,
         }
 
         const xScale = createPerformanceXScale(domain, margin, plotWidth);
+        const slotDates = buildPerformanceSlotDates(slice);
         const tickDates = buildPerformanceAxisDates(slice, 6);
         const yScale = function (value) {
             return margin.top + ((yMax - value) / (yMax - yMin)) * plotHeight;
@@ -2886,15 +2899,20 @@ end;`,
             performanceEquityChart.appendChild(label);
         }
 
-        tickDates.forEach(function (tickDate, tickIndex) {
-            const x = xScale(tickDate);
+        slotDates.forEach(function (slotDate) {
+            const x = xScale(slotDate);
             performanceEquityChart.appendChild(createSvgNode("line", {
                 x1: x,
                 y1: margin.top,
                 x2: x,
                 y2: height - margin.bottom,
                 class: "performance-chart-grid",
+                "stroke-opacity": 0.22,
             }));
+        });
+
+        tickDates.forEach(function (tickDate, tickIndex) {
+            const x = xScale(tickDate);
             const label = createSvgNode("text", {
                 x: x,
                 y: height - 12,
@@ -2980,6 +2998,7 @@ end;`,
             return;
         }
         const xScale = createPerformanceXScale(domain, margin, plotWidth);
+        const slotDates = buildPerformanceSlotDates(slice);
         const tickDates = buildPerformanceAxisDates(slice, 6);
         const values = slice.weekly.map(function (item) { return Number(item.actual); }).filter(Number.isFinite);
         const maxAbs = Math.max.apply(null, values.map(function (value) { return Math.abs(value); }).concat([1]));
@@ -3022,14 +3041,15 @@ end;`,
             performanceWeeklyChart.appendChild(label);
         }
 
-        tickDates.forEach(function (tickDate) {
-            const x = xScale(tickDate);
+        slotDates.forEach(function (slotDate) {
+            const x = xScale(slotDate);
             performanceWeeklyChart.appendChild(createSvgNode("line", {
                 x1: x,
                 y1: margin.top,
                 x2: x,
                 y2: height - margin.bottom,
                 class: "performance-chart-grid",
+                "stroke-opacity": 0.22,
             }));
         });
 

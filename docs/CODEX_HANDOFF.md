@@ -222,7 +222,7 @@ Validated after migration:
 - `tests/trading-code-safety.test.mjs`: pass
 - `scripts/validate_data_bundle.mjs` against monthly bundle: `ok=true`
 - `mqquant/01` monthly loader: pass
-- `mqquant/02` / `C:/xs_optimizer_v1` monthly loader: pass
+- `mqquant/02` loader: not certified on this machine because its default external source root is missing
 
 ### 2026-04-16 Homepage Headless Recheck
 
@@ -270,3 +270,97 @@ If the user asks whether the new files matched the old files:
 Tell the next Codex session:
 
 `Read docs/CODEX_HANDOFF.md first, then continue from the current homepage and futures KPI state.`
+
+## 2026-04-16 Cross-Project Audit Before Computer Switch
+
+This audit covered:
+
+- deployed homepage target: `https://hsu7183.github.io/xs-core-engine/`
+- local repo: `C:\Users\user\Documents\xs-core-engine`
+- sibling projects: `C:\Users\user\Documents\mqquant\01` and `C:\Users\user\Documents\mqquant\02`
+
+### xs-core-engine Sync Status
+
+- local `HEAD`: `086bf73`
+- remote `origin/main`: `a3ad44f`
+- current state: local branch is `ahead 2`, so the repo is not fully synced to GitHub yet
+- the two local-only commits are:
+  - `bc23955` `Document monthly bundle workflow and validator updates`
+  - `086bf73` `Enforce strict overlap checks for monthly data migration`
+- `git diff --name-only origin/main..HEAD` shows only docs / validator / tooling changes:
+  - `.gitignore`
+  - `assets/workspace-actions.js`
+  - `docs/CODEX_HANDOFF.md`
+  - `docs/PROJECT_STATE.md`
+  - `docs/START_HERE.md`
+  - `scripts/migrate_monthly_market_data.py`
+  - `scripts/validate_data_bundle.mjs`
+  - `src/data/normalize.js`
+  - `tests/data-validation.test.mjs`
+
+### Deployed Homepage Reality
+
+`origin/main:index.html` currently references:
+
+- `assets/gate.css?v=20260416p`
+- `assets/futures-kpi.js?v=20260416m`
+- `assets/home-code-output.js?v=20260416q`
+
+That means the public homepage matches the last pushed homepage package, not the two local-only audit commits above.
+
+### Strategy Logic Comparison
+
+#### xs-core-engine
+
+- this repo is still a spec-first renderer / safety shell, not a confirmed full clone of the legacy `0313plus` runtime
+- evidence:
+  - `README.md` states the repo targets `two outputs with identical C1-C5 behavior`
+  - `README.md` also states the templates are `safe bootstrap shells`
+  - `templates/base_indicator.xs` still keeps the real entry / exit rules commented out in `C3` and `C4`
+- conclusion:
+  - indicator / trading parity inside `xs-core-engine` is a contract goal
+  - but its current strategy logic is not the same as the live legacy `01` strategy logic yet
+
+#### mqquant/01
+
+- `mq01/xs_variants.py` is the paired renderer used to derive indicator and trading scripts from the same base XS
+- `mq01/services.py` runs `run_0313plus_backtest` and renders trading output with `render_trade_xs`
+- `mq01/config.py` points to `strategy/1150415.xs`
+- the bundled Python core `bundle/src/strategy/strategy_0313plus.py` hash matches `xs-core-engine/references/legacy-01/python/strategy/strategy_0313plus.py`
+- conclusion:
+  - `mqquant/01` is the fixed legacy-style 0313plus line
+  - its indicator and trading outputs come from the same base logic, with trading only adding execution commands
+
+#### mqquant/02
+
+- `mq02/xs_variants.py` hash matches `mq01/xs_variants.py`, so the indicator / trading rendering layer is the same
+- but `mq02/config.py` enables:
+  - `allow_template_mutation = True`
+  - `exploration_mode = "modular_loop"`
+- `mq02/services.py` imports `src.research.modular_0313plus`
+- `mq02/bootstrap.py` defaults to `C:\xs_optimizer_v1`
+- on this machine, `C:\xs_optimizer_v1` does not exist
+- conclusion:
+  - `mqquant/02` is not the same fixed strategy line as `mqquant/01`
+  - it is a modular research path
+  - because its default source root is missing on this machine, full runtime parity with `01` could not be certified today
+
+### Validation Completed Today
+
+- user installed:
+  - `node v24.14.1`
+  - `npm 11.11.0`
+- rerun results:
+  - `tests/data-validation.test.mjs`: pass
+  - `tests/trading-code-safety.test.mjs`: pass
+  - `scripts/validate_data_bundle.mjs --m1 ... --d1 ... --allow-daily-anchor-rebuild`: `ok=true`
+- strict overlap tooling:
+  - `scripts/migrate_monthly_market_data.py` now rejects any overlap mismatch and refuses to write new data
+
+### Do Not Lose This On The Next Computer
+
+1. `xs-core-engine` local repo is ahead of GitHub by 2 commits and still needs an explicit push decision.
+2. Do not push the untracked monthly shard directories until a real XQ export passes strict overlap verification.
+3. `mqquant/02` needs a valid source root on the next machine:
+   - either restore `C:\xs_optimizer_v1`
+   - or set `MQQUANT_SOURCE_ROOT` to a compatible source tree before using `run.cmd`

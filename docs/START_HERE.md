@@ -43,6 +43,10 @@ Then branch based on the task:
   - `data/bundled/legacy-01/m1/`
   - `data/bundled/legacy-01/d1/`
 - Homepage bundle loading now resolves shard files from each dataset's `manifest.json` instead of hardcoding every month path.
+- Local repo sync note:
+  - `HEAD = 086bf73`
+  - `origin/main = a3ad44f`
+  - local branch is ahead by 2 commits and is not fully pushed yet
 
 ## Current Data Snapshot
 
@@ -85,6 +89,12 @@ Do not use `file:///.../index.html` for normal testing because bundled text fetc
 - Do not answer "M1 and D1 fully matched" for the latest refresh.
 - If asked whether only `M1 / D1` are needed, answer yes for the user-facing flow and explain that `DA` is still derived internally.
 - Check for existing uncommitted changes before making assumptions about the worktree.
+- Do not claim `xs-core-engine` is already logic-identical to `mqquant/01`.
+  - current `templates/base_indicator.xs` and `templates/base_trading.xs` are still bootstrap shells
+  - real entry / exit conditions are still commented placeholders until a spec fills them
+- `mqquant/02` needs a valid external source root before use on a new machine.
+  - default path in its bootstrap is `C:\xs_optimizer_v1`
+  - if that path does not exist, set `MQQUANT_SOURCE_ROOT` first
 
 ## Recommended Next Step
 
@@ -92,4 +102,5 @@ If no more specific user request is given, continue from one of these:
 
 1. Manual browser verification of the populated `XQ TXT / CSV` upload path.
 2. Automation for real file-input upload checks.
-3. Resume spec-first paired XS renderer work on top of the now-stable monthly data path.
+3. Decide whether to push the two local-only audit / validator commits.
+4. Resume spec-first paired XS renderer work on top of the now-stable monthly data path.

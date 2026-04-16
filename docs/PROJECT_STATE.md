@@ -33,6 +33,19 @@ Useful legacy materials have already been imported into repo-owned locations.
   - latest date: `20260414`
   - refresh behavior: overlap must match exactly, then append only the new tail rows
 
+## Audit Note Before Computer Switch
+
+- `xs-core-engine` local repo is currently ahead of `origin/main` by 2 commits:
+  - `bc23955` `Document monthly bundle workflow and validator updates`
+  - `086bf73` `Enforce strict overlap checks for monthly data migration`
+- the deployed homepage still corresponds to the last pushed homepage package on `origin/main`
+- those local-only commits do not change the current homepage runtime bundle; they change docs, validation, normalization, and monthly migration tooling
+- `mqquant/01` and `mqquant/02` should not be described as identical strategy lines:
+  - `mqquant/01` is the fixed legacy 0313plus optimizer / exporter line
+  - `mqquant/02` is the modular research line with template mutation enabled
+- `xs-core-engine` should not yet be described as fully logic-identical to `mqquant/01`
+  - it is still a spec-first paired renderer shell whose base templates keep real entry / exit conditions commented until a spec fills them
+
 ## Main Files To Trust
 
 - `docs/CODEX_HANDOFF.md`
@@ -49,7 +62,8 @@ Useful legacy materials have already been imported into repo-owned locations.
 1. The populated `XQ TXT / CSV` upload path still needs a reliable end-to-end browser verification pass.
 2. A fully automated file-input harness is still desirable if we want repeatable homepage verification.
 3. Some legacy strings outside the current visible homepage path may still deserve cleanup.
-4. JS tests and Node-based validation could not be rerun on machines that do not have `node` available on PATH.
+4. `mqquant/02` depends on an external source root and could not be fully certified on this machine because its default `C:\xs_optimizer_v1` path is absent.
+5. The monthly shard directories are still untracked locally and must not be pushed until a real XQ export passes strict overlap verification.
 
 ## Recommended Next Milestone
 
@@ -59,7 +73,8 @@ The best next milestone is:
 
 1. Confirm the real upload workflow with actual `XQ TXT / CSV` files in a browser session.
 2. Keep the `M1 + D1` monthly bundle flow as the only user-facing market-data path.
-3. Continue paired XS renderer and artifact work only after the verification path is considered stable.
+3. Decide whether to push the two local-only audit / validator commits to GitHub.
+4. Continue paired XS renderer and artifact work only after the verification path is considered stable.
 
 ## Non-Negotiable Rules
 

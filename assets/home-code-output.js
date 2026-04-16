@@ -1,6 +1,6 @@
 (function () {
     const STORAGE_KEY = "xs-home-best-history-v3";
-    const VERIFICATION_REVISION = "2026-04-15-futures-kpi-v2";
+    const VERIFICATION_REVISION = "2026-04-16-weekly-kpi-detail-v1";
     const XQ_ACTIONS = {
         longEntry: "\u65b0\u8cb7",
         shortEntry: "\u65b0\u8ce3",
@@ -420,6 +420,8 @@ end;`,
     const compareNote = document.getElementById("compare-note");
     const compareKpiNote = document.getElementById("compare-kpi-note");
     const compareKpiBody = document.getElementById("compare-kpi-body");
+    const tradeDetailNote = document.getElementById("trade-detail-note");
+    const tradeDetailBody = document.getElementById("trade-detail-body");
     const refactorIndicatorUpload = document.getElementById("refactor-indicator-upload");
     const refactorTradingUpload = document.getElementById("refactor-trading-upload");
     const runRefactorButton = document.getElementById("run-refactor");
@@ -428,6 +430,30 @@ end;`,
     const outputTitle = document.getElementById("output-title");
     const outputFileBase = document.getElementById("output-file-base");
     const pairOutput = document.getElementById("pair-output");
+    function ensureSupplementalStyles() {
+        if (document.getElementById("xs-home-supplemental-styles")) {
+            return;
+        }
+        const style = document.createElement("style");
+        style.id = "xs-home-supplemental-styles";
+        style.textContent = [
+            ".futures-kpi-table tr.is-section td { padding: 10px 14px; border-bottom-color: rgba(149, 180, 197, 0.18); background: rgba(149, 180, 197, 0.08); color: rgba(236, 246, 247, 0.76); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }",
+            ".trade-detail-panel { margin-top: 16px; }",
+            ".trade-detail-table-wrap { overflow-x: auto; }",
+            ".trade-detail-table { width: 100%; min-width: 1440px; border-collapse: collapse; }",
+            ".trade-detail-table th, .trade-detail-table td { padding: 10px 12px; border-bottom: 1px solid rgba(149, 180, 197, 0.12); text-align: left; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }",
+            ".trade-detail-table th { color: rgba(236, 246, 247, 0.58); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }",
+            ".trade-detail-index { color: rgba(236, 246, 247, 0.62); }",
+            ".trade-detail-side { font-weight: 700; }",
+            ".trade-detail-side.is-long { color: #ffb7a7; }",
+            ".trade-detail-side.is-short { color: #9fdfb0; }",
+            ".trade-detail-money.is-gain, .trade-detail-points.is-gain { color: #ff8d8d; }",
+            ".trade-detail-money.is-loss, .trade-detail-points.is-loss { color: #8ce6b0; }",
+            ".trade-detail-money.is-flat, .trade-detail-points.is-flat { color: rgba(236, 246, 247, 0.7); }",
+        ].join("\n");
+        document.head.appendChild(style);
+    }
+    ensureSupplementalStyles();
     const exportOutput = document.getElementById("export-output");
     const indicatorFilename = document.getElementById("indicator-filename");
     const tradingFilename = document.getElementById("trading-filename");
@@ -790,6 +816,9 @@ end;`,
         if (type === "count") {
             return formatMetricCount(value);
         }
+        if (type === "percentAbs") {
+            return formatAbsolutePercent(value);
+        }
         if (type === "percent") {
             return formatSignedPercent(value);
         }
@@ -825,6 +854,146 @@ end;`,
             return "is-negative";
         }
         return "";
+    }
+    function formatAbsolutePercent(value) {
+        if (!hasMetricValue(value) || !Number.isFinite(Number(value))) {
+            return "待驗證";
+        }
+        return Math.abs(Number(value)).toFixed(1) + "%";
+    }
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+    function formatTradeTimestamp(value) {
+        const digits = String(value || "").replace(/\D+/g, "");
+        if (digits.length < 8) {
+            return "—";
+        }
+        const year = digits.slice(0, 4);
+        const month = String(toInt(digits.slice(4, 6), 0));
+        const day = String(toInt(digits.slice(6, 8), 0));
+        if (digits.length < 12) {
+            return year + "/" + month + "/" + day;
+        }
+        const hour = digits.slice(8, 10);
+        const minute = digits.slice(10, 12);
+        return year + "/" + month + "/" + day + " " + hour + ":" + minute;
+    }
+    function formatTradePrice(value) {
+        if (!hasMetricValue(value) || !Number.isFinite(Number(value))) {
+            return "—";
+        }
+        const rounded = Math.round(Number(value) * 100) / 100;
+        return rounded.toLocaleString("en-US", {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        });
+    }
+    function formatTradePoints(value) {
+        if (!hasMetricValue(value) || !Number.isFinite(Number(value))) {
+            return "—";
+        }
+        const rounded = Math.round(Number(value) * 100) / 100;
+        const absText = formatCompactNumber(Math.abs(rounded));
+        if (rounded > 0) {
+            return "+" + absText;
+        }
+        if (rounded < 0) {
+            return "-" + absText;
+        }
+        return "0";
+    }
+    function tradeToneClass(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number) || Math.abs(number) < 0.0001) {
+            return "is-flat";
+        }
+        return number > 0 ? "is-gain" : "is-loss";
+    }
+    function formatTradeSide(side) {
+        if (side === "long") {
+            return "多單";
+        }
+        if (side === "short") {
+            return "空單";
+        }
+        return "—";
+    }
+    function buildWeeklyExtremes(details, field) {
+        const weeklyMap = new Map();
+        (Array.isArray(details) ? details : []).forEach(function (detail) {
+            const date = parseChartTimestamp(detail && detail.exitTs);
+            const pnl = Number(detail && detail[field]);
+            if (!(date instanceof Date) || !Number.isFinite(pnl)) {
+                return;
+            }
+            const weekStart = startOfChartWeek(date);
+            const weekKey = weekStart ? String(weekStart.getTime()) : "";
+            if (!weekKey) {
+                return;
+            }
+            weeklyMap.set(weekKey, (weeklyMap.get(weekKey) || 0) + pnl);
+        });
+
+        const values = Array.from(weeklyMap.values()).filter(Number.isFinite);
+        return {
+            max: values.length ? Math.max.apply(null, values) : 0,
+            min: values.length ? Math.min.apply(null, values) : 0,
+        };
+    }
+    function buildFuturesKpiDisplayRows(report) {
+        if (!report || !report.theory || !report.actual) {
+            return [];
+        }
+
+        const capital = Number(report.config && report.config.capital);
+        const theoryLossAbs = Math.abs(Number(report.theory.averageLoser || 0));
+        const actualLossAbs = Math.abs(Number(report.actual.averageLoser || 0));
+        const weeklyTheory = buildWeeklyExtremes(report.details, "theoryPnl");
+        const weeklyActual = buildWeeklyExtremes(report.details, "actualPnl");
+        const theoryDrawdownPct = capital > 0 ? (Number(report.theory.maxDrawdown || 0) / capital) * 100 : null;
+        const actualDrawdownPct = capital > 0 ? (Number(report.actual.maxDrawdown || 0) / capital) * 100 : null;
+
+        return [
+            { kind: "section", label: "摘要概覽" },
+            { label: "淨利", theory: report.theory.totalNet, actual: report.actual.totalNet, type: "money", description: "完整交易歷史加總後的結果。" },
+            { label: "報酬率", theory: report.theory.totalReturnPct, actual: report.actual.totalReturnPct, type: "percent", description: "以本金為分母觀察資金成長幅度。" },
+            { label: "交易次數", theory: report.theory.count, actual: report.actual.count, type: "count", description: "完整平倉的交易回合總數。" },
+            { kind: "section", label: "交易品質" },
+            { label: "勝率", theory: report.theory.winRate * 100, actual: report.actual.winRate * 100, type: "percent", description: "獲利回合占總交易回合的比例。" },
+            { label: "平均單筆", theory: report.theory.averageTrade, actual: report.actual.averageTrade, type: "money", description: "總淨利除以交易次數後的期望值。" },
+            { label: "平均贏家", theory: report.theory.averageWinner, actual: report.actual.averageWinner, type: "money", description: "只統計獲利交易時的單筆平均值。" },
+            { label: "平均輸家", theory: report.theory.averageLoser, actual: report.actual.averageLoser, type: "money", description: "只統計虧損交易時的單筆平均值。" },
+            { label: "賺賠比", theory: theoryLossAbs > 0 ? report.theory.averageWinner / theoryLossAbs : null, actual: actualLossAbs > 0 ? report.actual.averageWinner / actualLossAbs : null, type: "ratio", description: "平均贏家除以平均輸家絕對值。" },
+            { label: "獲利因子", theory: report.theory.profitFactor, actual: report.actual.profitFactor, type: "ratio", description: "總獲利除以總虧損絕對值。" },
+            { kind: "section", label: "風險與回撤" },
+            { label: "累積淨利高點", theory: report.theory.cumulativeHigh, actual: report.actual.cumulativeHigh, type: "money", description: "歷史累積淨利到過的最高水位。" },
+            { label: "最大回撤金額", theory: -report.theory.maxDrawdown, actual: -report.actual.maxDrawdown, type: "money", description: "由累積高點回落到低點時的最大金額差。" },
+            { label: "最大回撤比率", theory: theoryDrawdownPct, actual: actualDrawdownPct, type: "percentAbs", tone: "low", description: "最大回撤金額除以本金。" },
+            { label: "最大單日獲利", theory: report.theory.dayMax, actual: report.actual.dayMax, type: "money", description: "以出場日彙總的最佳單日表現。" },
+            { label: "最大單日虧損", theory: report.theory.dayMin, actual: report.actual.dayMin, type: "money", description: "以出場日彙總的最差單日表現。" },
+            { label: "最佳單週損益", theory: weeklyTheory.max, actual: weeklyActual.max, type: "money", description: "每週彙總後的最佳單週結果。" },
+            { label: "最差單週損益", theory: weeklyTheory.min, actual: weeklyActual.min, type: "money", description: "每週彙總後的最差單週結果。" },
+            { kind: "section", label: "成本拆解" },
+            { label: "手續費", theory: -Number(report.totals && report.totals.fee || 0), actual: -Number(report.totals && report.totals.fee || 0), type: "money", description: "依目前設定估算的累積雙邊手續費。" },
+            { label: "交易稅", theory: -Number(report.totals && report.totals.tax || 0), actual: -Number(report.totals && report.totals.tax || 0), type: "money", description: "依契約金額與稅率估算的累積交易稅。" },
+            { label: "滑價成本", theory: 0, actual: -Number(report.totals && report.totals.slippage || 0), type: "money", description: "依目前單邊滑點設定估算的累積滑價成本。" },
+        ];
+    }
+    function futuresKpiToneClass(row, value) {
+        if (!row || row.tone !== "low") {
+            return valueToneClass(value);
+        }
+        const number = Number(value);
+        if (!Number.isFinite(number) || Math.abs(number) < 0.0001) {
+            return "";
+        }
+        return number > 0 ? "is-negative" : "is-positive";
     }
     function readStore() {
         try {
@@ -1885,6 +2054,14 @@ end;`,
     function cloneChartDate(date) {
         return date instanceof Date ? new Date(date.getTime()) : null;
     }
+    function normalizeChartDate(date) {
+        const next = cloneChartDate(date);
+        if (!next) {
+            return null;
+        }
+        next.setHours(0, 0, 0, 0);
+        return next;
+    }
 
     function addChartYears(date, years) {
         const next = cloneChartDate(date);
@@ -1913,15 +2090,36 @@ end;`,
     }
 
     function startOfChartWeek(date) {
-        const next = cloneChartDate(date);
+        const next = normalizeChartDate(date);
         if (!next) {
             return null;
         }
         const day = next.getDay();
         const diff = (day + 6) % 7;
-        next.setHours(0, 0, 0, 0);
         next.setDate(next.getDate() - diff);
         return next;
+    }
+    function isSameChartWeek(left, right) {
+        const leftWeek = startOfChartWeek(left);
+        const rightWeek = startOfChartWeek(right);
+        return Boolean(
+            leftWeek
+            && rightWeek
+            && leftWeek.getTime() === rightWeek.getTime()
+        );
+    }
+    function getChartWeekDisplayDate(weekStart, overallLastDate) {
+        const friday = addChartDays(weekStart, 4);
+        if (!friday) {
+            return normalizeChartDate(overallLastDate) || normalizeChartDate(weekStart);
+        }
+        if (isSameChartWeek(weekStart, overallLastDate)) {
+            const lastDate = normalizeChartDate(overallLastDate);
+            if (lastDate && lastDate.getTime() < friday.getTime()) {
+                return lastDate;
+            }
+        }
+        return friday;
     }
 
     function startOfChartMonth(date) {
@@ -2002,8 +2200,6 @@ end;`,
         return Array.from(indexes).sort(function (left, right) { return left - right; });
     }
     function resolvePerformanceDomain(slice) {
-        const rangeStart = slice?.range?.start instanceof Date ? cloneChartDate(slice.range.start) : null;
-        const rangeEnd = slice?.range?.end instanceof Date ? cloneChartDate(slice.range.end) : null;
         const firstPointDate = slice?.points?.find(function (point) { return point?.date instanceof Date; })?.date || null;
         const lastPointDate = slice?.points?.length
             ? slice.points.slice().reverse().find(function (point) { return point?.date instanceof Date; })?.date || null
@@ -2013,8 +2209,8 @@ end;`,
             ? slice.weekly.slice().reverse().find(function (item) { return item?.date instanceof Date; })?.date || null
             : null;
 
-        const start = cloneChartDate(rangeStart || firstPointDate || firstWeeklyDate);
-        const end = cloneChartDate(rangeEnd || lastPointDate || firstWeeklyDate || start);
+        const start = normalizeChartDate(firstPointDate || firstWeeklyDate || slice?.range?.start);
+        const end = normalizeChartDate(lastPointDate || lastWeeklyDate || slice?.range?.end || start);
         if (!start || !end) {
             return null;
         }
@@ -2031,17 +2227,28 @@ end;`,
             spanMs: Math.max(1, end.getTime() - start.getTime()),
         };
     }
-    function buildPerformanceTickDates(domain, maxTickCount) {
-        if (!domain) {
+    function buildPerformanceAxisDates(slice, maxTickCount) {
+        const dates = [];
+        const seen = new Set();
+        [slice?.points || [], slice?.weekly || []].forEach(function (items) {
+            items.forEach(function (item) {
+                const date = item && item.date instanceof Date ? normalizeChartDate(item.date) : null;
+                const key = date ? String(date.getTime()) : "";
+                if (!key || seen.has(key)) {
+                    return;
+                }
+                seen.add(key);
+                dates.push(date);
+            });
+        });
+
+        if (!dates.length) {
             return [];
         }
-
-        const tickCount = Math.max(2, maxTickCount || 6);
-        const ticks = [];
-        for (let index = 0; index < tickCount; index += 1) {
-            ticks.push(new Date(domain.startMs + (domain.spanMs * index / (tickCount - 1))));
-        }
-        return ticks;
+        dates.sort(function (left, right) { return left - right; });
+        return chooseTickIndexes(dates.length, maxTickCount || 6).map(function (index) {
+            return dates[index];
+        });
     }
     function createPerformanceXScale(domain, margin, plotWidth) {
         return function (date) {
@@ -2053,10 +2260,6 @@ end;`,
             return margin.left + ((clamped - domain.startMs) / domain.spanMs) * plotWidth;
         };
     }
-    function getPerformanceWeekAnchor(date) {
-        return addChartDays(date, 3) || cloneChartDate(date);
-    }
-
     function getPerformancePeriodLabel(key) {
         const definition = PERFORMANCE_PERIOD_DEFS[key];
         const group = definition ? PERFORMANCE_RANGE_GROUPS[definition.group] : null;
@@ -2180,18 +2383,8 @@ end;`,
             return null;
         }
 
-        const firstDate = cloneChartDate(normalized[0].date);
-        const lastDate = cloneChartDate(normalized[normalized.length - 1].date);
-        const points = [{
-            date: cloneChartDate(firstDate),
-            theoryTotal: 0,
-            actualTotal: 0,
-            theoryLong: 0,
-            actualLong: 0,
-            theoryShort: 0,
-            actualShort: 0,
-            synthetic: true,
-        }];
+        const firstDate = normalizeChartDate(normalized[0].date);
+        const lastDate = normalizeChartDate(normalized[normalized.length - 1].date);
         const weeklyMap = new Map();
 
         let theoryTotal = 0;
@@ -2213,17 +2406,6 @@ end;`,
                 actualShort += detail.actualPnl;
             }
 
-            points.push({
-                date: cloneChartDate(detail.date),
-                theoryTotal: round1(theoryTotal),
-                actualTotal: round1(actualTotal),
-                theoryLong: round1(theoryLong),
-                actualLong: round1(actualLong),
-                theoryShort: round1(theoryShort),
-                actualShort: round1(actualShort),
-                synthetic: false,
-            });
-
             const weekDate = startOfChartWeek(detail.date);
             const weekKey = weekDate ? String(weekDate.getTime()) : "";
             if (!weekKey) {
@@ -2232,20 +2414,120 @@ end;`,
 
             if (!weeklyMap.has(weekKey)) {
                 weeklyMap.set(weekKey, {
-                    date: weekDate,
+                    weekStart: cloneChartDate(weekDate),
+                    date: normalizeChartDate(detail.date),
+                    theory: 0,
                     actual: 0,
+                    theoryTotal: 0,
+                    actualTotal: 0,
+                    theoryLong: 0,
+                    actualLong: 0,
+                    theoryShort: 0,
+                    actualShort: 0,
                 });
             }
 
             const bucket = weeklyMap.get(weekKey);
+            bucket.date = normalizeChartDate(detail.date);
+            bucket.theory += detail.theoryPnl;
             bucket.actual += detail.actualPnl;
+            bucket.theoryTotal = theoryTotal;
+            bucket.actualTotal = actualTotal;
+            bucket.theoryLong = theoryLong;
+            bucket.actualLong = actualLong;
+            bucket.theoryShort = theoryShort;
+            bucket.actualShort = actualShort;
         });
 
-        const weekly = Array.from(weeklyMap.values()).sort(function (left, right) {
-            return left.date - right.date;
-        }).map(function (item) {
+        const firstWeek = startOfChartWeek(firstDate);
+        const lastWeek = startOfChartWeek(lastDate);
+        if (!firstWeek || !lastWeek) {
+            return null;
+        }
+
+        const weeklyBuckets = [];
+        let cursor = cloneChartDate(firstWeek);
+        let rollingTotals = {
+            theoryTotal: 0,
+            actualTotal: 0,
+            theoryLong: 0,
+            actualLong: 0,
+            theoryShort: 0,
+            actualShort: 0,
+        };
+
+        while (cursor && cursor.getTime() <= lastWeek.getTime()) {
+            const weekKey = String(cursor.getTime());
+            const existing = weeklyMap.get(weekKey);
+            const bucket = existing
+                ? {
+                    weekStart: cloneChartDate(existing.weekStart),
+                    date: getChartWeekDisplayDate(existing.weekStart, lastDate),
+                    theory: round1(existing.theory),
+                    actual: round1(existing.actual),
+                    theoryTotal: round1(existing.theoryTotal),
+                    actualTotal: round1(existing.actualTotal),
+                    theoryLong: round1(existing.theoryLong),
+                    actualLong: round1(existing.actualLong),
+                    theoryShort: round1(existing.theoryShort),
+                    actualShort: round1(existing.actualShort),
+                }
+                : {
+                    weekStart: cloneChartDate(cursor),
+                    date: getChartWeekDisplayDate(cursor, lastDate),
+                    theory: 0,
+                    actual: 0,
+                    theoryTotal: round1(rollingTotals.theoryTotal),
+                    actualTotal: round1(rollingTotals.actualTotal),
+                    theoryLong: round1(rollingTotals.theoryLong),
+                    actualLong: round1(rollingTotals.actualLong),
+                    theoryShort: round1(rollingTotals.theoryShort),
+                    actualShort: round1(rollingTotals.actualShort),
+                };
+
+            weeklyBuckets.push(bucket);
+            rollingTotals = {
+                theoryTotal: bucket.theoryTotal,
+                actualTotal: bucket.actualTotal,
+                theoryLong: bucket.theoryLong,
+                actualLong: bucket.actualLong,
+                theoryShort: bucket.theoryShort,
+                actualShort: bucket.actualShort,
+            };
+            cursor = addChartDays(cursor, 7);
+        }
+
+        if (!weeklyBuckets.length) {
+            return null;
+        }
+
+        const points = [{
+            date: cloneChartDate(weeklyBuckets[0].date),
+            theoryTotal: 0,
+            actualTotal: 0,
+            theoryLong: 0,
+            actualLong: 0,
+            theoryShort: 0,
+            actualShort: 0,
+            synthetic: true,
+        }].concat(weeklyBuckets.map(function (item) {
             return {
                 date: cloneChartDate(item.date),
+                theoryTotal: round1(item.theoryTotal),
+                actualTotal: round1(item.actualTotal),
+                theoryLong: round1(item.theoryLong),
+                actualLong: round1(item.actualLong),
+                theoryShort: round1(item.theoryShort),
+                actualShort: round1(item.actualShort),
+                synthetic: false,
+            };
+        }));
+
+        const weekly = weeklyBuckets.map(function (item) {
+            return {
+                weekStart: cloneChartDate(item.weekStart),
+                date: cloneChartDate(item.date),
+                theory: round1(item.theory),
                 actual: round1(item.actual),
             };
         });
@@ -2322,12 +2604,12 @@ end;`,
         }].concat(adjustedPoints);
 
         const weekly = payload.weekly.filter(function (item) {
-            const weekStart = item.date;
-            const weekEnd = addChartDays(item.date, 6) || item.date;
-            return weekEnd >= range.start && weekStart <= range.end;
+            return item.date >= range.start && item.date <= range.end;
         }).map(function (item) {
             return {
+                weekStart: cloneChartDate(item.weekStart),
                 date: cloneChartDate(item.date),
+                theory: round1(item.theory),
                 actual: round1(item.actual),
             };
         });
@@ -2564,6 +2846,7 @@ end;`,
         }
 
         const xScale = createPerformanceXScale(domain, margin, plotWidth);
+        const tickDates = buildPerformanceAxisDates(slice, 6);
         const yScale = function (value) {
             return margin.top + ((yMax - value) / (yMax - yMin)) * plotHeight;
         };
@@ -2590,7 +2873,7 @@ end;`,
             performanceEquityChart.appendChild(label);
         }
 
-        buildPerformanceTickDates(domain, 6).forEach(function (tickDate, tickIndex, tickDates) {
+        tickDates.forEach(function (tickDate, tickIndex) {
             const x = xScale(tickDate);
             performanceEquityChart.appendChild(createSvgNode("line", {
                 x1: x,
@@ -2684,7 +2967,7 @@ end;`,
             return;
         }
         const xScale = createPerformanceXScale(domain, margin, plotWidth);
-        const tickDates = buildPerformanceTickDates(domain, 6);
+        const tickDates = buildPerformanceAxisDates(slice, 6);
         const values = slice.weekly.map(function (item) { return Number(item.actual); }).filter(Number.isFinite);
         const maxAbs = Math.max.apply(null, values.map(function (value) { return Math.abs(value); }).concat([1]));
         const yScale = function (value) {
@@ -2692,7 +2975,7 @@ end;`,
         };
         const zeroY = yScale(0);
         const weeklyCenters = slice.weekly.map(function (item) {
-            return xScale(getPerformanceWeekAnchor(item.date));
+            return xScale(item.date);
         });
         let minCenterGap = Number.POSITIVE_INFINITY;
         for (let index = 1; index < weeklyCenters.length; index += 1) {
@@ -2821,7 +3104,7 @@ end;`,
         renderPerformanceWeeklyChart(slice);
 
         if (performanceChartNote) {
-            performanceChartNote.textContent = formatPerformanceRangeCaption(slice.range) + "，累積損益以區間起點歸零；週損益採含滑價實績。";
+            performanceChartNote.textContent = formatPerformanceRangeCaption(slice.range) + "，累積損益與週損益都改用每週最後一個交易日顯示；每根柱體代表一整週的含滑價實績。";
         }
     }
 
@@ -2896,21 +3179,87 @@ end;`,
             return;
         }
 
-        if (!report || !Array.isArray(report.rows) || !report.rows.length) {
+        const rows = buildFuturesKpiDisplayRows(report);
+        if (!rows.length) {
             futuresKpiBody.innerHTML = '<tr><td colspan="4">等待回放完成後顯示。</td></tr>';
             return;
         }
 
-        futuresKpiBody.innerHTML = report.rows.map(function (row) {
+        futuresKpiBody.innerHTML = rows.map(function (row) {
+            if (row.kind === "section") {
+                return '<tr class="is-section"><td colspan="4">' + escapeHtml(row.label) + "</td></tr>";
+            }
             return [
                 "<tr>",
-                '<td class="futures-kpi-name">' + row.label + "</td>",
-                '<td><span class="futures-kpi-value ' + valueToneClass(row.theory) + '">' + formatFutureValue(row.theory, row.type) + "</span></td>",
-                '<td><span class="futures-kpi-value ' + valueToneClass(row.actual) + '">' + formatFutureValue(row.actual, row.type) + "</span></td>",
-                '<td class="futures-kpi-desc">' + (row.description || "") + "</td>",
+                '<td class="futures-kpi-name">' + escapeHtml(row.label) + "</td>",
+                '<td><span class="futures-kpi-value ' + futuresKpiToneClass(row, row.theory) + '">' + formatFutureValue(row.theory, row.type) + "</span></td>",
+                '<td><span class="futures-kpi-value ' + futuresKpiToneClass(row, row.actual) + '">' + formatFutureValue(row.actual, row.type) + "</span></td>",
+                '<td class="futures-kpi-desc">' + escapeHtml(row.description || "") + "</td>",
                 "</tr>",
             ].join("");
         }).join("");
+    }
+
+    function renderTradeDetailRows(report) {
+        if (!tradeDetailBody) {
+            return;
+        }
+
+        if (!report || !Array.isArray(report.details) || !report.details.length) {
+            tradeDetailBody.innerHTML = '<tr><td colspan="15">等待回放完成後顯示。</td></tr>';
+            if (tradeDetailNote) {
+                tradeDetailNote.textContent = "按出場時間排序；每列代表一筆完整平倉交易。";
+            }
+            return;
+        }
+
+        const details = report.details.slice().sort(function (left, right) {
+            const leftKey = String(left && (left.exitTs || left.entryTs) || "");
+            const rightKey = String(right && (right.exitTs || right.entryTs) || "");
+            return leftKey.localeCompare(rightKey);
+        });
+
+        let theoryAccum = 0;
+        let actualAccum = 0;
+
+        tradeDetailBody.innerHTML = details.map(function (detail, index) {
+            const theoryPnl = Number(detail && detail.theoryPnl);
+            const actualPnl = Number(detail && detail.actualPnl);
+            theoryAccum += Number.isFinite(theoryPnl) ? theoryPnl : 0;
+            actualAccum += Number.isFinite(actualPnl) ? actualPnl : 0;
+
+            const sideClass = detail && detail.side === "long"
+                ? "is-long"
+                : (detail && detail.side === "short" ? "is-short" : "");
+            const pointTone = tradeToneClass(detail && detail.points);
+            const theoryTone = tradeToneClass(theoryPnl);
+            const actualTone = tradeToneClass(actualPnl);
+
+            return [
+                "<tr>",
+                '<td class="trade-detail-index">' + (index + 1) + "</td>",
+                "<td>" + escapeHtml(formatTradeTimestamp(detail && detail.entryTs)) + "</td>",
+                "<td>" + escapeHtml(formatTradeTimestamp(detail && detail.exitTs)) + "</td>",
+                '<td><span class="trade-detail-side ' + sideClass + '">' + escapeHtml(formatTradeSide(detail && detail.side)) + "</span></td>",
+                "<td>" + escapeHtml(formatTradePrice(detail && detail.entryPrice)) + "</td>",
+                "<td>" + escapeHtml(formatTradePrice(detail && detail.exitPrice)) + "</td>",
+                "<td>" + formatMetricCount(detail && detail.quantity) + "</td>",
+                '<td><span class="trade-detail-points ' + pointTone + '">' + escapeHtml(formatTradePoints(detail && detail.points)) + "</span></td>",
+                "<td>" + formatMetricMoney(detail && detail.fee) + "</td>",
+                "<td>" + formatMetricMoney(detail && detail.tax) + "</td>",
+                "<td>" + formatMetricMoney(detail && detail.slipCost) + "</td>",
+                '<td><span class="trade-detail-money ' + theoryTone + '">' + formatSignedMoney(theoryPnl) + "</span></td>",
+                '<td><span class="trade-detail-money ' + tradeToneClass(theoryAccum) + '">' + formatSignedMoney(theoryAccum) + "</span></td>",
+                '<td><span class="trade-detail-money ' + actualTone + '">' + formatSignedMoney(actualPnl) + "</span></td>",
+                '<td><span class="trade-detail-money ' + tradeToneClass(actualAccum) + '">' + formatSignedMoney(actualAccum) + "</span></td>",
+                "</tr>",
+            ].join("");
+        }).join("");
+
+        if (tradeDetailNote) {
+            tradeDetailNote.textContent = "共 " + formatMetricCount(details.length) + " 筆完整交易，按出場時間排序；含滑價欄位已納入目前單邊滑點 "
+                + formatCompactNumber(report.config && report.config.slipPerSide) + " 點。";
+        }
     }
 
     function diffReportValue(left, right, type) {
@@ -3061,6 +3410,7 @@ end;`,
                     + "、單邊滑點 " + formatCompactNumber(report.config.slipPerSide) + " 點。"
             );
             renderFuturesKpiRows(report);
+            renderTradeDetailRows(report);
             return;
         }
 
@@ -3072,6 +3422,7 @@ end;`,
         renderPerformanceCharts(null, "year_6");
         setText(futuresKpiNote, "等待回放完成後，這裡會顯示期貨口徑的理論 / 含滑價 KPI。");
         renderFuturesKpiRows(null);
+        renderTradeDetailRows(null);
     }
 
     function resetComparePanel() {

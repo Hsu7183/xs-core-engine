@@ -16,7 +16,7 @@
     <script src="assets/bundled-strategy-ui.js?v=20260415g" defer></script>
     <script src="assets/xq-upload-helpers.js?v=20260415j" defer></script>
     <script src="assets/futures-kpi.js?v=20260415c" defer></script>
-    <script src="assets/home-code-output.js?v=20260416g" defer></script>
+    <script src="assets/home-code-output.js?v=20260416h" defer></script>
 </head>
 <body class="is-locked">
     <div class="gate-layer" id="gate-layer" role="dialog" aria-modal="true" aria-label="首頁解鎖">
@@ -187,6 +187,41 @@
                         <tbody id="futures-kpi-body">
                             <tr>
                                 <td colspan="4">等待回放完成後顯示。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="annual-panel trade-detail-panel">
+                <div class="futures-kpi-head">
+                    <span class="metric-label">逐筆交易明細</span>
+                    <p id="trade-detail-note" class="helper-text helper-compact"></p>
+                </div>
+                <div class="trade-detail-table-wrap">
+                    <table class="trade-detail-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>進場時間</th>
+                                <th>出場時間</th>
+                                <th>方向</th>
+                                <th>進場價</th>
+                                <th>出場價</th>
+                                <th>口數</th>
+                                <th>點數</th>
+                                <th>手續費</th>
+                                <th>交易稅</th>
+                                <th>滑價</th>
+                                <th>理論淨損益</th>
+                                <th>累積理論</th>
+                                <th>含滑價淨損益</th>
+                                <th>累積含滑價</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-detail-body">
+                            <tr>
+                                <td colspan="15">等待回放完成後顯示。</td>
                             </tr>
                         </tbody>
                     </table>

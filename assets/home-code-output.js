@@ -1795,6 +1795,61 @@ end;`,
         }
         return Array.from(indexes).sort(function (left, right) { return left - right; });
     }
+    function resolvePerformanceDomain(slice) {
+        const rangeStart = slice?.range?.start instanceof Date ? cloneChartDate(slice.range.start) : null;
+        const rangeEnd = slice?.range?.end instanceof Date ? cloneChartDate(slice.range.end) : null;
+        const firstPointDate = slice?.points?.find(function (point) { return point?.date instanceof Date; })?.date || null;
+        const lastPointDate = slice?.points?.length
+            ? slice.points.slice().reverse().find(function (point) { return point?.date instanceof Date; })?.date || null
+            : null;
+        const firstWeeklyDate = slice?.weekly?.find(function (item) { return item?.date instanceof Date; })?.date || null;
+        const lastWeeklyDate = slice?.weekly?.length
+            ? slice.weekly.slice().reverse().find(function (item) { return item?.date instanceof Date; })?.date || null
+            : null;
+
+        const start = cloneChartDate(rangeStart || firstPointDate || firstWeeklyDate);
+        const end = cloneChartDate(rangeEnd || lastPointDate || firstWeeklyDate || start);
+        if (!start || !end) {
+            return null;
+        }
+
+        if (end.getTime() <= start.getTime()) {
+            end.setDate(end.getDate() + 1);
+        }
+
+        return {
+            start: start,
+            end: end,
+            startMs: start.getTime(),
+            endMs: end.getTime(),
+            spanMs: Math.max(1, end.getTime() - start.getTime()),
+        };
+    }
+    function buildPerformanceTickDates(domain, maxTickCount) {
+        if (!domain) {
+            return [];
+        }
+
+        const tickCount = Math.max(2, maxTickCount || 6);
+        const ticks = [];
+        for (let index = 0; index < tickCount; index += 1) {
+            ticks.push(new Date(domain.startMs + (domain.spanMs * index / (tickCount - 1))));
+        }
+        return ticks;
+    }
+    function createPerformanceXScale(domain, margin, plotWidth) {
+        return function (date) {
+            const time = date instanceof Date ? date.getTime() : Number(date);
+            if (!Number.isFinite(time) || !domain) {
+                return margin.left + plotWidth / 2;
+            }
+            const clamped = Math.min(domain.endMs, Math.max(domain.startMs, time));
+            return margin.left + ((clamped - domain.startMs) / domain.spanMs) * plotWidth;
+        };
+    }
+    function getPerformanceWeekAnchor(date) {
+        return addChartDays(date, 3) || cloneChartDate(date);
+    }
 
     function getPerformancePeriodLabel(key) {
         const definition = PERFORMANCE_PERIOD_DEFS[key];
@@ -2061,7 +2116,9 @@ end;`,
         }].concat(adjustedPoints);
 
         const weekly = payload.weekly.filter(function (item) {
-            return item.date >= range.start && item.date <= range.end;
+            const weekStart = item.date;
+            const weekEnd = addChartDays(item.date, 6) || item.date;
+            return weekEnd >= range.start && weekStart <= range.end;
         }).map(function (item) {
             return {
                 date: cloneChartDate(item.date),
@@ -2258,6 +2315,10 @@ end;`,
         const margin = { top: 18, right: 22, bottom: 36, left: 86 };
         const plotWidth = width - margin.left - margin.right;
         const plotHeight = height - margin.top - margin.bottom;
+        const domain = resolvePerformanceDomain(slice);
+        if (!domain) {
+            return;
+        }
         const series = [
             { key: "actualTotal", color: "#f4f7fb", width: 2.4 },
             { key: "theoryTotal", color: "#a9b8ca", width: 1.6, dashed: true },
@@ -2296,12 +2357,7 @@ end;`,
             yMax += padding;
         }
 
-        const xScale = function (index) {
-            if (slice.points.length === 1) {
-                return margin.left + plotWidth / 2;
-            }
-            return margin.left + (plotWidth * index / (slice.points.length - 1));
-        };
+        const xScale = createPerformanceXScale(domain, margin, plotWidth);
         const yScale = function (value) {
             return margin.top + ((yMax - value) / (yMax - yMin)) * plotHeight;
         };
@@ -2328,9 +2384,8 @@ end;`,
             performanceEquityChart.appendChild(label);
         }
 
-        chooseTickIndexes(slice.points.length, 6).forEach(function (pointIndex) {
-            const x = xScale(pointIndex);
-            const date = slice.points[pointIndex].date;
+        buildPerformanceTickDates(domain, 6).forEach(function (tickDate, tickIndex, tickDates) {
+            const x = xScale(tickDate);
             performanceEquityChart.appendChild(createSvgNode("line", {
                 x1: x,
                 y1: margin.top,
@@ -2341,10 +2396,10 @@ end;`,
             const label = createSvgNode("text", {
                 x: x,
                 y: height - 12,
-                "text-anchor": pointIndex === 0 ? "start" : (pointIndex === slice.points.length - 1 ? "end" : "middle"),
+                "text-anchor": tickIndex === 0 ? "start" : (tickIndex === tickDates.length - 1 ? "end" : "middle"),
                 class: "performance-chart-label",
             });
-            label.textContent = formatChartDate(date, false);
+            label.textContent = formatChartDate(tickDate, false);
             performanceEquityChart.appendChild(label);
         });
 
@@ -2365,7 +2420,7 @@ end;`,
 
         series.forEach(function (item) {
             const path = slice.points.map(function (point, index) {
-                return (index ? "L" : "M") + xScale(index).toFixed(2) + " " + yScale(Number(point[item.key])).toFixed(2);
+                return (index ? "L" : "M") + xScale(point.date).toFixed(2) + " " + yScale(Number(point[item.key])).toFixed(2);
             }).join(" ");
             performanceEquityChart.appendChild(createSvgNode("path", {
                 d: path,
@@ -2377,13 +2432,9 @@ end;`,
         });
 
         if (slice.maxPoint) {
-            const maxIndex = slice.points.findIndex(function (point) {
-                return point.date && slice.maxPoint.date && point.date.getTime() === slice.maxPoint.date.getTime()
-                    && Number(point.actualTotal) === Number(slice.maxPoint.actualTotal);
-            });
-            if (maxIndex >= 0) {
+            if (slice.maxPoint.date instanceof Date) {
                 performanceEquityChart.appendChild(createSvgNode("circle", {
-                    cx: xScale(maxIndex),
+                    cx: xScale(slice.maxPoint.date),
                     cy: yScale(slice.maxPoint.actualTotal),
                     r: 4.5,
                     fill: "#ff7c70",
@@ -2393,13 +2444,9 @@ end;`,
         }
 
         if (slice.minPoint) {
-            const minIndex = slice.points.findIndex(function (point) {
-                return point.date && slice.minPoint.date && point.date.getTime() === slice.minPoint.date.getTime()
-                    && Number(point.actualTotal) === Number(slice.minPoint.actualTotal);
-            });
-            if (minIndex >= 0) {
+            if (slice.minPoint.date instanceof Date) {
                 performanceEquityChart.appendChild(createSvgNode("circle", {
-                    cx: xScale(minIndex),
+                    cx: xScale(slice.minPoint.date),
                     cy: yScale(slice.minPoint.actualTotal),
                     r: 4.5,
                     fill: "#79d893",
@@ -2426,14 +2473,31 @@ end;`,
         const margin = { top: 18, right: 22, bottom: 34, left: 86 };
         const plotWidth = width - margin.left - margin.right;
         const plotHeight = height - margin.top - margin.bottom;
+        const domain = resolvePerformanceDomain(slice);
+        if (!domain) {
+            return;
+        }
+        const xScale = createPerformanceXScale(domain, margin, plotWidth);
+        const tickDates = buildPerformanceTickDates(domain, 6);
         const values = slice.weekly.map(function (item) { return Number(item.actual); }).filter(Number.isFinite);
         const maxAbs = Math.max.apply(null, values.map(function (value) { return Math.abs(value); }).concat([1]));
         const yScale = function (value) {
             return margin.top + ((maxAbs - value) / (maxAbs * 2)) * plotHeight;
         };
         const zeroY = yScale(0);
-        const barSlot = plotWidth / Math.max(slice.weekly.length, 1);
-        const barWidth = Math.max(4, Math.min(24, barSlot * 0.62));
+        const weeklyCenters = slice.weekly.map(function (item) {
+            return xScale(getPerformanceWeekAnchor(item.date));
+        });
+        let minCenterGap = Number.POSITIVE_INFINITY;
+        for (let index = 1; index < weeklyCenters.length; index += 1) {
+            const gap = weeklyCenters[index] - weeklyCenters[index - 1];
+            if (gap > 0) {
+                minCenterGap = Math.min(minCenterGap, gap);
+            }
+        }
+        const nominalWeekWidth = plotWidth * ((7 * 24 * 60 * 60 * 1000) / domain.spanMs) * 0.72;
+        const gapWidth = Number.isFinite(minCenterGap) ? minCenterGap * 0.72 : nominalWeekWidth;
+        const barWidth = Math.max(4, Math.min(24, nominalWeekWidth || 24, gapWidth || 24));
 
         for (let index = 0; index < 5; index += 1) {
             const ratio = index / 4;
@@ -2456,6 +2520,17 @@ end;`,
             performanceWeeklyChart.appendChild(label);
         }
 
+        tickDates.forEach(function (tickDate) {
+            const x = xScale(tickDate);
+            performanceWeeklyChart.appendChild(createSvgNode("line", {
+                x1: x,
+                y1: margin.top,
+                x2: x,
+                y2: height - margin.bottom,
+                class: "performance-chart-grid",
+            }));
+        });
+
         performanceWeeklyChart.appendChild(createSvgNode("line", {
             x1: margin.left,
             y1: zeroY,
@@ -2465,7 +2540,7 @@ end;`,
         }));
 
         slice.weekly.forEach(function (item, index) {
-            const x = margin.left + barSlot * index + (barSlot - barWidth) / 2;
+            const x = weeklyCenters[index] - (barWidth / 2);
             const y = yScale(item.actual);
             const rectY = Math.min(y, zeroY);
             const rectHeight = Math.max(1, Math.abs(zeroY - y));
@@ -2480,15 +2555,15 @@ end;`,
             }));
         });
 
-        chooseTickIndexes(slice.weekly.length, 6).forEach(function (itemIndex) {
-            const x = margin.left + barSlot * itemIndex + barSlot / 2;
+        tickDates.forEach(function (tickDate, tickIndex) {
+            const x = xScale(tickDate);
             const label = createSvgNode("text", {
                 x: x,
                 y: height - 10,
-                "text-anchor": itemIndex === 0 ? "start" : (itemIndex === slice.weekly.length - 1 ? "end" : "middle"),
+                "text-anchor": tickIndex === 0 ? "start" : (tickIndex === tickDates.length - 1 ? "end" : "middle"),
                 class: "performance-chart-label",
             });
-            label.textContent = formatChartDate(slice.weekly[itemIndex].date, false);
+            label.textContent = formatChartDate(tickDate, false);
             performanceWeeklyChart.appendChild(label);
         });
     }

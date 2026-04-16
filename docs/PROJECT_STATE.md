@@ -27,11 +27,11 @@ Useful legacy materials have already been imported into repo-owned locations.
 - `M1`
   - rows: `455,759`
   - latest timestamp: `20260415 132800`
-  - refresh behavior: safe replacement from `202506+`
+  - refresh behavior: future writes must pass strict overlap verification before appending any new tail rows
 - `D1`
   - rows: `1,522`
   - latest date: `20260414`
-  - refresh behavior: overlap matched, safe append
+  - refresh behavior: overlap must match exactly, then append only the new tail rows
 
 ## Main Files To Trust
 

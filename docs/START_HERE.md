@@ -53,8 +53,9 @@ Then branch based on the task:
 
 Important historical note:
 
-- `D1` overlap matched and was safely appended.
-- `M1` was not a pure append from `202506` onward, so later months were safely refreshed.
+- `D1` overlap matched, so only the new tail rows are eligible to append.
+- `M1` previously showed overlap divergence from `202506` onward.
+- Current rule: if the overlapping portion does not exactly match stored data, stop and do not write the new dataset into the bundle.
 
 ## Homepage Status
 

@@ -169,20 +169,20 @@ Comparison outcome:
 
 - `D1`
   - overlapping history matched the stored dataset
-  - safe action: append new rows
+  - safe action: append only the new tail rows
   - latest stored date is now `20260414`
 - `M1`
   - overlapping history was not a pure append all the way through
   - divergence started from `202506`
-  - safe action: replace monthly shards from `202506` onward with the newly exported XQ data, instead of blindly appending
+  - under the current strict policy, this kind of overlap mismatch must block the write instead of replacing stored data
   - latest stored timestamp is now `20260415 132800`
 
 Do not summarize this as "M1 and D1 were both fully identical."  
 The correct summary is:
 
 - `D1` overlap matched
-- `M1` required safe refresh from `202506+`
-- both datasets have already been updated to the latest state
+- `M1` showed overlap divergence from `202506+`
+- going forward, overlap mismatch must stop the import and trigger manual review
 
 ### Monthly Split State
 
@@ -262,8 +262,8 @@ If the user asks whether the new files matched the old files:
 - do not answer "both fully matched"
 - answer:
   - `D1` overlap matched
-  - `M1` did not remain a pure append from `202506` onward, so later months were refreshed safely
-  - latest data has already been merged and stored
+  - `M1` did not remain a pure append from `202506` onward
+  - under the current rule, any overlap mismatch must block the write until the source is manually confirmed
 
 ## Suggested Prompt On The Next Computer
 

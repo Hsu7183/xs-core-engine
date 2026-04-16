@@ -299,55 +299,6 @@ if Date <> Date[1] then begin
         lastPrintedDate = Date[1];
     end;
 end;`,
-        da: `// DailyAnchor 匯出
-input:
-    AnchorTime(084500, "定錨時間");
-
-var:
-    outPath(""),
-    outStr(""),
-    lastPrintedDate(0),
-    yH(0),
-    yL(0),
-    yC(0),
-    dayRange(0),
-    ppVal(0),
-    nhVal(0),
-    nlVal(0);
-
-if BarFreq <> "Min" then
-    RaiseRunTimeError("本腳本僅支援分鐘線");
-
-if CurrentBar = 1 then begin
-    outPath = "C:\\\\XQ\\\\data\\\\DailyAnchor.txt";
-    lastPrintedDate = 0;
-end;
-
-if (Date <> Date[1]) and (Date <> lastPrintedDate) then begin
-    yH = GetField("最高價", "D")[1];
-    yL = GetField("最低價", "D")[1];
-    yC = GetField("收盤價", "D")[1];
-
-    if (yH > 0) and (yL > 0) and (yC > 0) then begin
-        dayRange = yH - yL;
-        ppVal = (yH + yL + 2 * yC) / 4;
-        nhVal = 2 * ppVal - yL;
-        nlVal = 2 * ppVal - yH;
-
-        outStr = NumToStr(Date, 0) + " "
-               + NumToStr(AnchorTime, 0) + " "
-               + NumToStr(yH, 0) + " "
-               + NumToStr(yL, 0) + " "
-               + NumToStr(yC, 0) + " "
-               + NumToStr(dayRange, 0) + " "
-               + NumToStr(ppVal, 2) + " "
-               + NumToStr(nhVal, 2) + " "
-               + NumToStr(nlVal, 2);
-
-        Print(File(outPath), outStr);
-        lastPrintedDate = Date;
-    end;
-end;`,
     };
 
     const STRATEGIES = {
@@ -466,6 +417,8 @@ end;`,
     const compareParamNote = document.getElementById("compare-param-note");
     const compareFirstMismatch = document.getElementById("compare-first-mismatch");
     const compareNote = document.getElementById("compare-note");
+    const compareKpiNote = document.getElementById("compare-kpi-note");
+    const compareKpiBody = document.getElementById("compare-kpi-body");
     const refactorIndicatorUpload = document.getElementById("refactor-indicator-upload");
     const refactorTradingUpload = document.getElementById("refactor-trading-upload");
     const runRefactorButton = document.getElementById("run-refactor");
@@ -479,12 +432,10 @@ end;`,
     const tradingFilename = document.getElementById("trading-filename");
     const exportM1Filename = document.getElementById("export-m1-filename");
     const exportD1Filename = document.getElementById("export-d1-filename");
-    const exportDailyAnchorFilename = document.getElementById("export-daily-anchor-filename");
     const indicatorOutput = document.getElementById("indicator-output");
     const tradingOutput = document.getElementById("trading-output");
     const exportM1Output = document.getElementById("export-m1-output");
     const exportD1Output = document.getElementById("export-d1-output");
-    const exportDailyAnchorOutput = document.getElementById("export-daily-anchor-output");
     const bundledDataUi = window.__XSBundledData || null;
     const bundledStrategyUi = window.__XSBundledStrategyUi || null;
     const xqUploadHelpers = window.__XSXqUpload || null;
@@ -497,6 +448,14 @@ end;`,
     let performanceChartRangeKey = "year_6";
 
     function setText(el, value) { if (el) { el.textContent = String(value ?? ""); } }
+    function setStatusText(el, value) {
+        if (!el) {
+            return;
+        }
+        const text = String(value ?? "");
+        el.textContent = text;
+        el.hidden = !text;
+    }
     function setVisible(el, visible) {
         if (el) {
             el.hidden = !visible;
@@ -583,6 +542,7 @@ end;`,
     }
     function formatMetricPercent(v) { return hasMetricValue(v) && Number.isFinite(Number(v)) ? Number(v).toFixed(1) + "%" : "待驗證"; }
     function formatMetricCount(v) { return hasMetricValue(v) && Number.isFinite(Number(v)) ? String(Math.round(Number(v))) : "待驗證"; }
+    function formatMetricRatio(v) { return hasMetricValue(v) && Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "待驗證"; }
     function formatMetricMoney(v) {
         return hasMetricValue(v) && Number.isFinite(Number(v))
             ? Math.round(Number(v)).toLocaleString("en-US")
@@ -598,6 +558,26 @@ end;`,
         if (rounded < 0) { return "-" + absText; }
         return "0";
     }
+    function formatSignedCount(v) {
+        if (!hasMetricValue(v) || !Number.isFinite(Number(v))) {
+            return "待驗證";
+        }
+        const rounded = Math.round(Number(v));
+        const absText = Math.abs(rounded).toLocaleString("en-US");
+        if (rounded > 0) { return "+" + absText; }
+        if (rounded < 0) { return "-" + absText; }
+        return "0";
+    }
+    function formatSignedRatio(v) {
+        if (!hasMetricValue(v) || !Number.isFinite(Number(v))) {
+            return "待驗證";
+        }
+        const number = Number(v);
+        const absText = Math.abs(number).toFixed(2);
+        if (number > 0) { return "+" + absText; }
+        if (number < 0) { return "-" + absText; }
+        return "0.00";
+    }
     function formatFutureValue(value, type) {
         if (!hasMetricValue(value) || !Number.isFinite(Number(value))) {
             return "待驗證";
@@ -607,6 +587,24 @@ end;`,
         }
         if (type === "percent") {
             return formatSignedPercent(value);
+        }
+        if (type === "ratio") {
+            return formatMetricRatio(value);
+        }
+        return formatSignedMoney(value);
+    }
+    function formatFutureDiffValue(value, type) {
+        if (!hasMetricValue(value) || !Number.isFinite(Number(value))) {
+            return "待驗證";
+        }
+        if (type === "count") {
+            return formatSignedCount(value);
+        }
+        if (type === "percent") {
+            return formatSignedPercent(value);
+        }
+        if (type === "ratio") {
+            return formatSignedRatio(value);
         }
         return formatSignedMoney(value);
     }
@@ -630,6 +628,14 @@ end;`,
                 const normalized = Object.assign({}, saved, {
                     verification: null,
                     lastStatus: "\u5df2\u66f4\u65b0\u8cc7\u6599\u89e3\u6790\u898f\u5247\uff0c\u8acb\u91cd\u65b0\u9a57\u8b49\u4e00\u6b21\u3002",
+                });
+                writeStore(normalized);
+                return normalized;
+            }
+            if (saved && saved.verification && !hasUsableVerificationPayload(saved.verification)) {
+                const normalized = Object.assign({}, saved, {
+                    verification: null,
+                    lastStatus: "\u767c\u73fe\u820a\u7684\u4e0d\u5b8c\u6574\u9a57\u8b49\u5feb\u53d6\uff0c\u5df2\u81ea\u52d5\u6539\u70ba\u91cd\u65b0\u9a57\u8b49\u3002",
                 });
                 writeStore(normalized);
                 return normalized;
@@ -761,15 +767,26 @@ end;`,
             return;
         }
         fileModeBridgeAttempted = true;
+        const targetUrl = "http://127.0.0.1:8765/index.html";
+        let redirected = false;
 
         const bridgeScript = document.createElement("script");
-        bridgeScript.src = "http://127.0.0.1:8765/assets/gate.js?bridge=" + Date.now();
+        bridgeScript.src = "http://127.0.0.1:8765/assets/gate-standalone.js?bridge=" + Date.now();
         bridgeScript.async = true;
         bridgeScript.onload = function () {
-            window.location.replace("http://127.0.0.1:8765/index.html");
+            redirected = true;
+            window.location.replace(targetUrl);
         };
-        bridgeScript.onerror = function () { };
+        bridgeScript.onerror = function () {
+            setStatusText(bestUploadStatus, "你現在是直接開啟 file:/// 版本，所以首頁不會自動讀取內建 M1 / D1，也不會自動算 KPI。請執行 start-local-site.cmd，或直接開啟 http://127.0.0.1:8765/index.html。");
+        };
         document.head.appendChild(bridgeScript);
+
+        window.setTimeout(function () {
+            if (!redirected) {
+                setStatusText(bestUploadStatus, "你現在是直接開啟 file:/// 版本，所以首頁不會自動讀取內建 M1 / D1，也不會自動算 KPI。請執行 start-local-site.cmd，或直接開啟 http://127.0.0.1:8765/index.html。");
+            }
+        }, 1200);
     }
     function hasBundledCompareData() {
         return Boolean(bundledDataUi && bundledDataUi.hasCompareData());
@@ -828,7 +845,7 @@ end;`,
 
         bestModeAutoRunStarted = true;
         setBestButtonBusy(true);
-        setText(bestUploadStatus, "已載入首頁預設策略與程式內建 M1 / D1，正在自動計算首頁結果...");
+        setStatusText(bestUploadStatus, "已載入首頁預設策略與程式內建 M1 / D1，正在自動計算首頁結果...");
         setText(compareStatusValue, "計算中");
         setText(compareSimCount, "-");
         setText(compareXqCount, "-");
@@ -841,7 +858,7 @@ end;`,
             updateBestHistory().catch(function (error) {
                 bestModeAutoRunStarted = false;
                 setBestButtonBusy(false);
-                setText(bestUploadStatus, error && error.message ? error.message : "自動計算失敗，請再按一次「更新並比對」。");
+                setStatusText(bestUploadStatus, error && error.message ? error.message : "自動計算失敗，請再按一次「更新並比對」。");
             });
         }, 0);
     }
@@ -897,7 +914,28 @@ end;`,
         const verifiedSlippage = Number(saved && saved.verification && saved.verification.settings && saved.verification.settings.sideCostPoints);
         return gateSlippage != null && Number.isFinite(verifiedSlippage) && Math.abs(gateSlippage - verifiedSlippage) > 0.0001;
     }
+    function hasUsableVerificationPayload(verification) {
+        if (!verification || typeof verification !== "object") {
+            return false;
+        }
+
+        const report = verification.futuresKpi;
+        const summary = report && report.summary ? report.summary : null;
+        const compare = verification.compare;
+
+        return Boolean(
+            summary
+            && Number.isFinite(Number(summary.theoryNet))
+            && Number.isFinite(Number(summary.actualNet))
+            && Number.isFinite(Number(summary.tradeCount))
+            && compare
+            && Number.isFinite(Number(compare.simCount))
+        );
+    }
     function getDisplayVerification(saved) {
+        if (!hasUsableVerificationPayload(saved && saved.verification)) {
+            return null;
+        }
         if (shouldRefreshVerificationForGateSlippage(saved)) {
             return null;
         }
@@ -2527,10 +2565,8 @@ end;`,
         setText(outputFileBase, "策略名：" + baseName);
         setText(exportM1Filename, baseName + "_M1.xs");
         setText(exportD1Filename, baseName + "_D1.xs");
-        setText(exportDailyAnchorFilename, baseName + "_DA.xs");
         exportM1Output.value = EXPORT_SCRIPTS.m1;
         exportD1Output.value = EXPORT_SCRIPTS.d1;
-        exportDailyAnchorOutput.value = EXPORT_SCRIPTS.da;
     }
 
     function getBestId() {
@@ -2596,6 +2632,131 @@ end;`,
         }).join("");
     }
 
+    function diffReportValue(left, right, type) {
+        const leftNumber = Number(left);
+        const rightNumber = Number(right);
+        if (!Number.isFinite(leftNumber) || !Number.isFinite(rightNumber)) {
+            return null;
+        }
+        const diff = leftNumber - rightNumber;
+        if (type === "count") {
+            return Math.round(diff);
+        }
+        if (type === "ratio") {
+            return Math.round(diff * 100) / 100;
+        }
+        return round1(diff);
+    }
+
+    function buildCompareKpiRows(simulationReport, xqReport) {
+        if (!simulationReport || !Array.isArray(simulationReport.rows) || !xqReport || !Array.isArray(xqReport.rows)) {
+            return [];
+        }
+
+        const xqRowsByKey = new Map(
+            xqReport.rows.map(function (row) {
+                return [row.key, row];
+            })
+        );
+
+        return simulationReport.rows
+            .filter(function (row) { return xqRowsByKey.has(row.key); })
+            .map(function (row) {
+                const xqRow = xqRowsByKey.get(row.key);
+                return {
+                    key: row.key,
+                    label: row.label,
+                    type: row.type,
+                    simulationTheory: row.theory,
+                    simulationActual: row.actual,
+                    xqTheory: xqRow.theory,
+                    xqActual: xqRow.actual,
+                    diffTheory: diffReportValue(row.theory, xqRow.theory, row.type),
+                    diffActual: diffReportValue(row.actual, xqRow.actual, row.type),
+                    description: row.description || xqRow.description || "",
+                };
+            });
+    }
+
+    function buildCompareKpiStack(labelA, valueA, labelB, valueB, type, formatter) {
+        return [
+            '<div class="compare-kpi-stack">',
+            '<div class="compare-kpi-subvalue"><span class="compare-kpi-subvalue-label">' + labelA + '</span><span class="compare-kpi-value ' + valueToneClass(valueA) + '">' + formatter(valueA, type) + "</span></div>",
+            '<div class="compare-kpi-subvalue"><span class="compare-kpi-subvalue-label">' + labelB + '</span><span class="compare-kpi-value ' + valueToneClass(valueB) + '">' + formatter(valueB, type) + "</span></div>",
+            "</div>",
+        ].join("");
+    }
+
+    function renderCompareKpiRows(rows) {
+        if (!compareKpiBody) {
+            return;
+        }
+
+        if (!Array.isArray(rows) || !rows.length) {
+            compareKpiBody.innerHTML = '<tr><td colspan="5">等待上傳 XQ TXT / CSV 後顯示。</td></tr>';
+            return;
+        }
+
+        compareKpiBody.innerHTML = rows.map(function (row) {
+            return [
+                "<tr>",
+                '<td class="compare-kpi-name">' + row.label + "</td>",
+                "<td>" + buildCompareKpiStack("理論", row.simulationTheory, "含滑價", row.simulationActual, row.type, formatFutureValue) + "</td>",
+                "<td>" + buildCompareKpiStack("理論", row.xqTheory, "含滑價", row.xqActual, row.type, formatFutureValue) + "</td>",
+                "<td>" + buildCompareKpiStack("理論差", row.diffTheory, "含滑價差", row.diffActual, row.type, formatFutureDiffValue) + "</td>",
+                '<td class="compare-kpi-desc">' + (row.description || "") + "</td>",
+                "</tr>",
+            ].join("");
+        }).join("");
+    }
+
+    function renderCompareKpiPanel(verification) {
+        if (!compareKpiNote || !compareKpiBody) {
+            return;
+        }
+
+        if (!verification) {
+            setText(compareKpiNote, "上傳 XQ TXT / CSV 後，這裡會用和上方相同的期貨 KPI 口徑顯示程式模擬與 XQ 明細差異。");
+            renderCompareKpiRows(null);
+            return;
+        }
+
+        const simulationReport = verification.futuresKpi || null;
+        const xqReport = verification.xqFuturesKpi || verification.xqAuthorityFuturesKpi || null;
+
+        if (!simulationReport) {
+            setText(compareKpiNote, "等待回放完成後，這裡會顯示程式模擬與 XQ 明細的期貨 KPI 對照。");
+            renderCompareKpiRows(null);
+            return;
+        }
+
+        if (!xqReport) {
+            setText(
+                compareKpiNote,
+                verification.hasXqComparison
+                    ? "目前已載入 XQ 明細，但還沒有可直接對照的期貨 KPI。"
+                    : "尚未提供 XQ TXT / CSV，因此下表暫時只保留給後續的 KPI 對照使用。"
+            );
+            renderCompareKpiRows(null);
+            return;
+        }
+
+        const rows = buildCompareKpiRows(simulationReport, xqReport);
+        const noteParts = [
+            "下表使用和上方相同的期貨 KPI 口徑，XQ 欄位目前採 " + (verification.xqKpiSourceLabel || "XQ 交易明細轉換 KPI") + "。",
+        ];
+        if (verification.futuresKpiCompare) {
+            noteParts.push(
+                "理論淨利差 " + formatSignedMoney(verification.futuresKpiCompare.theoryNetDiff)
+                + "，含滑價淨利差 " + formatSignedMoney(verification.futuresKpiCompare.actualNetDiff)
+                + "，交易次數差 " + formatSignedCount(verification.futuresKpiCompare.tradeCountDiff) + "。"
+            );
+        }
+
+        setText(compareKpiNote, noteParts.join(" "));
+        renderCompareKpiRows(rows);
+    }
+
     function renderBestMetrics(verification) {
         const report = verification && verification.futuresKpi ? verification.futuresKpi : null;
         const fallbackMetrics = verification && verification.metrics ? verification.metrics : DEFAULT_BEST_METRICS;
@@ -2644,6 +2805,7 @@ end;`,
 
     function renderComparePanel(verification) {
         if (!verification) {
+            renderCompareKpiPanel(null);
             if (window.location.protocol === "file:" && hasBundledCompareData()) {
                 setText(compareStatusValue, "請改用本機站台");
                 setText(compareSimCount, "-");
@@ -2664,6 +2826,7 @@ end;`,
         setText(compareParamNote, verification.paramNote || "未提供交易明細參數列。");
         setText(compareFirstMismatch, verification.firstMismatchText || "完全吻合。");
         setText(compareNote, verification.note || "");
+        renderCompareKpiPanel(verification);
     }
 
     function applyCompareSettings(settings) {
@@ -2701,7 +2864,7 @@ end;`,
         renderComparePanel(displayVerification);
         applyCompareSettings(displayVerification && displayVerification.settings ? displayVerification.settings : null);
         showPair("歷史最佳", "最佳報酬配對", bestId, nextIndicator, nextTrading);
-        setText(
+        setStatusText(
             bestUploadStatus,
             saved?.lastStatus
                 ? saved.lastStatus
@@ -3725,6 +3888,9 @@ end;`,
                 settings: input.settings,
                 metrics: simulationMetrics,
                 futuresKpi: futuresKpi,
+                xqFuturesKpi: null,
+                xqAuthorityFuturesKpi: null,
+                futuresKpiCompare: null,
                 compare: {
                     xqCount: 0,
                     simCount: simulation.events.length,
@@ -3747,6 +3913,7 @@ end;`,
                 hasXqComparison: false,
                 metricsSourceNote: "",
                 simulatedTxt: simulatedTxt,
+                xqKpiSourceLabel: "",
             };
         }
 
@@ -3754,7 +3921,9 @@ end;`,
         let metricsSourceNote = "";
         let xqSourceLabel = hasXqTxt ? "XQ TXT" : "XQ CSV";
         let xqEvents = [];
+        let xqFuturesKpi = null;
         let xqAuthorityFuturesKpi = null;
+        let xqKpiSourceLabel = "";
         let futuresKpiCompare = null;
         let paramCompare = {
             checkedCount: 0,
@@ -3779,8 +3948,10 @@ end;`,
                     pointValue: input.settings.pointValue,
                     slipPerSide: input.settings.sideCostPoints,
                 });
+                xqFuturesKpi = xqAuthorityFuturesKpi;
+                xqKpiSourceLabel = "XQ CSV 權威 KPI";
                 if (futuresKpi && typeof futuresKpiHelpers.compareReports === "function") {
-                    futuresKpiCompare = futuresKpiHelpers.compareReports(futuresKpi, xqAuthorityFuturesKpi);
+                    futuresKpiCompare = futuresKpiHelpers.compareReports(futuresKpi, xqFuturesKpi);
                 }
             }
             metricsSourceNote = "\u5df2\u8f09\u5165 XQ CSV\uff0c\u4f46\u9996\u9801 KPI \u4ecd\u7dad\u6301\u4ee5\u7a0b\u5f0f\u6a21\u64ec\u7684\u671f\u8ca8\u53e3\u5f91\u986f\u793a\uff1bXQ \u660e\u7d30\u53ea\u7528\u4f86\u505a\u4e8b\u4ef6\u8207 KPI \u6821\u5c0d\u3002";
@@ -3794,7 +3965,7 @@ end;`,
                 if (Math.abs(theoryNetDiff) <= 0.1 && tradeCountDiff === 0) {
                     noteParts.push("\u7121\u6ed1\u50f9 KPI \u5df2\u8207 XQ CSV \u5c0d\u9f4a\u3002");
                 } else {
-                    noteParts.push("\u7121\u6ed1\u50f9 KPI \u8207 XQ CSV \u4ecd\u6709\u5dee\u7570\uff1a\u6de8\u5229\u5dee " + formatSignedMoney(theoryNetDiff) + "\uff0c\u4ea4\u6613\u6578\u5dee " + formatMetricCount(Math.abs(tradeCountDiff)) + "\u3002");
+                    noteParts.push("\u7121\u6ed1\u50f9 KPI \u8207 XQ CSV \u4ecd\u6709\u5dee\u7570\uff1a\u6de8\u5229\u5dee " + formatSignedMoney(theoryNetDiff) + "\uff0c\u4ea4\u6613\u6578\u5dee " + formatSignedCount(tradeCountDiff) + "\u3002");
                 }
             }
             if (!hasXqTxt) {
@@ -3809,6 +3980,20 @@ end;`,
             const xqTradePack = buildTradesFromEventsFlexible(xqText.events, input.settings);
             xqEvents = xqText.events;
             paramCompare = compareHeaderParams(xqText.headerParams, params);
+            if (futuresKpiHelpers && typeof futuresKpiHelpers.buildSimulationReport === "function") {
+                const xqTextFuturesKpi = futuresKpiHelpers.buildSimulationReport(xqTradePack.trades, {
+                    capital: input.settings.capital,
+                    pointValue: input.settings.pointValue,
+                    slipPerSide: input.settings.sideCostPoints,
+                });
+                if (!xqFuturesKpi) {
+                    xqFuturesKpi = xqTextFuturesKpi;
+                    xqKpiSourceLabel = "XQ TXT 轉換 KPI";
+                }
+                if (!futuresKpiCompare && futuresKpi && typeof futuresKpiHelpers.compareReports === "function") {
+                    futuresKpiCompare = futuresKpiHelpers.compareReports(futuresKpi, xqTextFuturesKpi);
+                }
+            }
             if (!metricsSourceNote) {
                 metricsSourceNote = buildXqMetricsSourceNote(xqStructure, xqTradePack);
                 if (metricsSourceNote) {
@@ -3840,7 +4025,9 @@ end;`,
             settings: input.settings,
             metrics: metrics,
             futuresKpi: futuresKpi,
+            xqFuturesKpi: xqFuturesKpi,
             xqAuthorityFuturesKpi: xqAuthorityFuturesKpi,
+            xqKpiSourceLabel: xqKpiSourceLabel,
             futuresKpiCompare: futuresKpiCompare,
             compare: compare,
             paramCompare: paramCompare,
@@ -3865,7 +4052,7 @@ end;`,
 
     async function updateBestHistory() {
         setBestButtonBusy(true);
-        setText(bestUploadStatus, "正在整理策略與資料來源，準備回放計算...");
+        setStatusText(bestUploadStatus, "正在整理策略與資料來源，準備回放計算...");
 
         try {
             const indicatorFile = await readUploadedFile(bestIndicatorUpload);
@@ -3887,7 +4074,7 @@ end;`,
             if (!tradingFile) { defaultStrategyKinds.push("交易版"); }
 
             if (!indicatorFile && !tradingFile && !uploadedM1File && !uploadedD1File && !xqUploads.count && !hasBundledCompareData()) {
-                setText(
+                setStatusText(
                     bestUploadStatus,
                     hasBundledCompareData()
                         ? (buildBundledStatusText() + " 目前策略直接使用下方預設指標版與交易版。若要重新比對，請補上交易明細，手動上傳也可以覆蓋程式內建資料。")
@@ -4029,6 +4216,36 @@ end;`,
             renderTradeDetailSummary(Array.from(bestXqTxtUpload.files || []), getDisplayVerification(readStore()));
         });
     }
+    function scheduleBestAutoRunRetry() {
+        window.setTimeout(function () {
+            const saved = readStore();
+            if (
+                bestModeAutoRunStarted
+                || getDisplayVerification(saved)
+                || !document.body.classList.contains("is-unlocked")
+                || window.location.protocol === "file:"
+            ) {
+                return;
+            }
+
+            bestModeAutoRunStarted = true;
+            setBestButtonBusy(true);
+            setStatusText(bestUploadStatus, "已載入首頁預設策略與程式內建 M1 / D1，正在自動計算首頁結果...");
+            setText(compareStatusValue, "計算中");
+            setText(compareSimCount, "-");
+            setText(compareXqCount, "-");
+            setText(comparePrefixCount, "-");
+            setText(compareParamNote, "程式正在直接使用首頁預設指標版 / 交易版與內建 M1 / D1 進行回放。");
+            setText(compareFirstMismatch, "尚未進入比對階段。");
+            setText(compareNote, "若本次仍失敗，狀態訊息會直接顯示在資料上傳區下方。");
+
+            updateBestHistory().catch(function (error) {
+                bestModeAutoRunStarted = false;
+                setBestButtonBusy(false);
+                setStatusText(bestUploadStatus, error && error.message ? error.message : "自動計算失敗，請再按一次「更新並比對」。");
+            });
+        }, 80);
+    }
     window.addEventListener("xs:slippage-ready", function (event) {
         const nextSlippage = toNumber(event && event.detail && event.detail.slippage, readGateSlippage(DEFAULT_COMPARE_SETTINGS.sideCostPoints));
         if (bestSideCostInput) {
@@ -4036,6 +4253,21 @@ end;`,
         }
         bestModeAutoRunStarted = false;
         showBestMode();
+        scheduleBestAutoRunRetry();
+    });
+    window.addEventListener("load", function () {
+        scheduleBestAutoRunRetry();
+    });
+    window.addEventListener("pageshow", function () {
+        scheduleBestAutoRunRetry();
+    });
+    window.addEventListener("focus", function () {
+        scheduleBestAutoRunRetry();
+    });
+    document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+            scheduleBestAutoRunRetry();
+        }
     });
     applyBestUploadButton.addEventListener("click", function () { updateBestHistory(); });
     runRefactorButton.addEventListener("click", function () { runRefactor(); });
@@ -4043,8 +4275,7 @@ end;`,
     bindCopy("copy-trading", function () { return tradingOutput.value; });
     bindCopy("copy-export-m1", function () { return exportM1Output.value; });
     bindCopy("copy-export-d1", function () { return exportD1Output.value; });
-    bindCopy("copy-export-daily-anchor", function () { return exportDailyAnchorOutput.value; });
-
     trySwitchFileModeToLocalSite();
     showBestMode();
+    scheduleBestAutoRunRetry();
 })();

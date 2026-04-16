@@ -9,14 +9,14 @@
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
     <title>xs-core-engine</title>
-    <link rel="stylesheet" href="assets/gate.css?v=20260416c">
+    <link rel="stylesheet" href="assets/gate.css?v=20260416d">
     <script src="assets/gate-standalone.js?v=20260415i" defer></script>
-    <script src="assets/bundled-data-config.js?v=20260415g" defer></script>
-    <script src="assets/bundled-data-ui.js?v=20260415g" defer></script>
+    <script src="assets/bundled-data-config.js?v=20260416d" defer></script>
+    <script src="assets/bundled-data-ui.js?v=20260416d" defer></script>
     <script src="assets/bundled-strategy-ui.js?v=20260415g" defer></script>
     <script src="assets/xq-upload-helpers.js?v=20260415j" defer></script>
     <script src="assets/futures-kpi.js?v=20260415c" defer></script>
-    <script src="assets/home-code-output.js?v=20260416c" defer></script>
+    <script src="assets/home-code-output.js?v=20260416e" defer></script>
 </head>
 <body class="is-locked">
     <div class="gate-layer" id="gate-layer" role="dialog" aria-modal="true" aria-label="首頁解鎖">
@@ -95,7 +95,7 @@
             <button class="mode-card mode-button" data-mode="export" type="button">
                 <span class="mode-index">04</span>
                 <h2>匯出 XQ 資料腳本</h2>
-                <p>只顯示 M1、D1、DA 三份匯出腳本。</p>
+                <p>只顯示 M1、D1 兩份匯出腳本。</p>
             </button>
         </section>
 
@@ -291,6 +291,31 @@
                 <span class="metric-label">摘要</span>
                 <p id="compare-note" class="helper-text helper-compact"></p>
             </div>
+
+            <div class="annual-panel compare-kpi-panel">
+                <div class="compare-kpi-head">
+                    <span class="metric-label">期貨 KPI 對照</span>
+                    <p id="compare-kpi-note" class="helper-text helper-compact">上傳 XQ TXT / CSV 後，這裡會顯示程式模擬與 XQ 明細的期貨 KPI 對照。</p>
+                </div>
+                <div class="compare-kpi-table-wrap">
+                    <table class="compare-kpi-table">
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>程式模擬</th>
+                                <th>XQ 口徑</th>
+                                <th>差異</th>
+                                <th>說明</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compare-kpi-body">
+                            <tr>
+                                <td colspan="5">等待上傳 XQ TXT / CSV 後顯示。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <section id="refactor-upload-panel" class="upload-panel" hidden>
@@ -372,16 +397,6 @@
                     <textarea id="export-d1-output" class="code-textarea export-textarea" readonly></textarea>
                 </article>
 
-                <article class="code-card">
-                    <div class="code-toolbar">
-                        <div class="code-title-block">
-                            <h3>DA</h3>
-                            <p id="export-daily-anchor-filename" class="code-filename"></p>
-                        </div>
-                        <button id="copy-export-daily-anchor" class="copy-button" type="button">複製</button>
-                    </div>
-                    <textarea id="export-daily-anchor-output" class="code-textarea export-textarea" readonly></textarea>
-                </article>
             </div>
         </section>
     </main>

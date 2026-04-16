@@ -1,6 +1,6 @@
 (function () {
     const STORAGE_KEY = "xs-home-best-history-v3";
-    const VERIFICATION_REVISION = "2026-04-16-weekly-kpi-detail-v1";
+    const VERIFICATION_REVISION = "2026-04-16-weekly-kpi-detail-v2";
     const XQ_ACTIONS = {
         longEntry: "\u65b0\u8cb7",
         shortEntry: "\u65b0\u8ce3",
@@ -437,19 +437,44 @@ end;`,
         const style = document.createElement("style");
         style.id = "xs-home-supplemental-styles";
         style.textContent = [
-            ".futures-kpi-table tr.is-section td { padding: 10px 14px; border-bottom-color: rgba(149, 180, 197, 0.18); background: rgba(149, 180, 197, 0.08); color: rgba(236, 246, 247, 0.76); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }",
+            ".futures-kpi-table tr.is-section td { padding: 8px 10px; border-bottom-color: rgba(149, 180, 197, 0.18); background: rgba(149, 180, 197, 0.08); color: rgba(236, 246, 247, 0.76); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }",
+            ".futures-kpi-table th, .futures-kpi-table td { vertical-align: top; }",
+            ".futures-kpi-rating, .futures-kpi-value.rating-strong, .futures-kpi-value.rating-adequate, .futures-kpi-value.rating-improve { font-weight: 700; }",
+            ".futures-kpi-rating { color: rgba(236, 246, 247, 0.92); }",
+            ".futures-kpi-rating.rating-strong, .futures-kpi-value.rating-strong { color: #ff8d8d; }",
+            ".futures-kpi-rating.rating-adequate, .futures-kpi-value.rating-adequate { color: rgba(236, 246, 247, 0.92); }",
+            ".futures-kpi-rating.rating-improve, .futures-kpi-value.rating-improve { color: #8ce6b0; }",
+            ".futures-kpi-ref { color: rgba(236, 246, 247, 0.68); font-size: 11px; }",
             ".trade-detail-panel { margin-top: 16px; }",
-            ".trade-detail-table-wrap { overflow-x: auto; }",
-            ".trade-detail-table { width: 100%; min-width: 1440px; border-collapse: collapse; }",
-            ".trade-detail-table th, .trade-detail-table td { padding: 10px 12px; border-bottom: 1px solid rgba(149, 180, 197, 0.12); text-align: left; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }",
-            ".trade-detail-table th { color: rgba(236, 246, 247, 0.58); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }",
-            ".trade-detail-index { color: rgba(236, 246, 247, 0.62); }",
-            ".trade-detail-side { font-weight: 700; }",
-            ".trade-detail-side.is-long { color: #ffb7a7; }",
-            ".trade-detail-side.is-short { color: #9fdfb0; }",
+            ".trade-detail-table-wrap { overflow-x: hidden; overflow-y: auto; max-height: 520px; scrollbar-gutter: stable; }",
+            ".trade-detail-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; font-size: 11px; line-height: 1.25; }",
+            ".trade-detail-table th, .trade-detail-table td { padding: 5px 6px; border-bottom: 1px solid rgba(149, 180, 197, 0.12); text-align: left; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums; }",
+            ".trade-detail-table th { position: sticky; top: 0; z-index: 1; background: #1e272c; color: rgba(236, 246, 247, 0.58); font-size: 10px; letter-spacing: 0.03em; text-transform: uppercase; }",
+            ".trade-detail-table th:nth-child(1) { width: 34px; }",
+            ".trade-detail-table th:nth-child(2) { width: 106px; }",
+            ".trade-detail-table th:nth-child(3) { width: 74px; }",
+            ".trade-detail-table th:nth-child(4) { width: 56px; }",
+            ".trade-detail-table th:nth-child(5) { width: 58px; }",
+            ".trade-detail-table th:nth-child(6) { width: 60px; }",
+            ".trade-detail-table th:nth-child(7) { width: 62px; }",
+            ".trade-detail-table th:nth-child(8) { width: 98px; }",
+            ".trade-detail-table th:nth-child(9) { width: 112px; }",
+            ".trade-detail-table th:nth-child(10) { width: 98px; }",
+            ".trade-detail-table th:nth-child(11) { width: 112px; }",
+            ".trade-detail-index { color: rgba(236, 246, 247, 0.62); text-align: center; vertical-align: top; padding-top: 7px; }",
+            ".trade-detail-time { width: 106px; text-align: center; }",
+            ".trade-detail-price { width: 74px; text-align: center; }",
+            ".trade-detail-qty { text-align: center; }",
+            ".trade-detail-action { width: 56px; font-weight: 700; text-align: center; }",
+            ".trade-detail-action.is-long { color: #ffb7a7; }",
+            ".trade-detail-action.is-short { color: #9fdfb0; }",
+            ".trade-detail-action.is-force { color: #ffd166; }",
+            ".trade-detail-entry-row td { border-bottom-color: rgba(149, 180, 197, 0.08); }",
+            ".trade-detail-entry-row + .trade-detail-exit-row td { padding-top: 3px; }",
+            ".trade-detail-empty { color: rgba(236, 246, 247, 0.38); }",
             ".trade-detail-money.is-gain, .trade-detail-points.is-gain { color: #ff8d8d; }",
             ".trade-detail-money.is-loss, .trade-detail-points.is-loss { color: #8ce6b0; }",
-            ".trade-detail-money.is-flat, .trade-detail-points.is-flat { color: rgba(236, 246, 247, 0.7); }",
+            ".trade-detail-money.is-flat, .trade-detail-points.is-flat { color: rgba(236, 246, 247, 0.92); }",
         ].join("\n");
         document.head.appendChild(style);
     }
@@ -829,6 +854,21 @@ end;`,
         if (type === "count") {
             return formatMetricCount(value);
         }
+        if (type === "moneyAbs") {
+            return formatMetricMoney(Math.abs(Number(value)));
+        }
+        if (type === "f1") {
+            return Number(value).toFixed(1);
+        }
+        if (type === "f2") {
+            return Number(value).toFixed(2);
+        }
+        if (type === "f3") {
+            return Number(value).toFixed(3);
+        }
+        if (type === "f4") {
+            return Number(value).toFixed(4);
+        }
         if (type === "percentAbs") {
             return formatAbsolutePercent(value);
         }
@@ -846,6 +886,21 @@ end;`,
         }
         if (type === "count") {
             return formatSignedCount(value);
+        }
+        if (type === "f1") {
+            return (Number(value) > 0 ? "+" : "") + Number(value).toFixed(1);
+        }
+        if (type === "f2") {
+            return (Number(value) > 0 ? "+" : "") + Number(value).toFixed(2);
+        }
+        if (type === "f3") {
+            return (Number(value) > 0 ? "+" : "") + Number(value).toFixed(3);
+        }
+        if (type === "f4") {
+            return (Number(value) > 0 ? "+" : "") + Number(value).toFixed(4);
+        }
+        if (type === "percentAbs") {
+            return formatSignedPercent(value);
         }
         if (type === "percent") {
             return formatSignedPercent(value);
@@ -937,6 +992,85 @@ end;`,
         }
         return "—";
     }
+    function formatTradeAction(action, side, phase) {
+        const text = String(action || "").trim();
+        if (text) {
+            return text;
+        }
+        if (phase === "entry") {
+            if (side === "long") {
+                return XQ_ACTIONS.longEntry;
+            }
+            if (side === "short") {
+                return XQ_ACTIONS.shortEntry;
+            }
+        }
+        if (phase === "exit") {
+            if (side === "long") {
+                return XQ_ACTIONS.longExit;
+            }
+            if (side === "short") {
+                return XQ_ACTIONS.shortExit;
+            }
+        }
+        return "\u2014";
+    }
+
+    function tradeActionClass(action, side) {
+        const text = String(action || "").trim();
+        if (text === XQ_ACTIONS.forceExit) {
+            return "is-force";
+        }
+        if (side === "long" || text === XQ_ACTIONS.longEntry || text === XQ_ACTIONS.longExit) {
+            return "is-long";
+        }
+        if (side === "short" || text === XQ_ACTIONS.shortEntry || text === XQ_ACTIONS.shortExit) {
+            return "is-short";
+        }
+        return "";
+    }
+
+    function buildTradeEmptyCell() {
+        return '<span class="trade-detail-empty">&mdash;</span>';
+    }
+
+    function ensureTradeDetailHeader() {
+        if (!tradeDetailBody) {
+            return;
+        }
+
+        const tradeTable = tradeDetailBody.closest("table");
+        if (!tradeTable) {
+            return;
+        }
+
+        let tableHead = tradeTable.querySelector("thead");
+        if (!tableHead) {
+            tableHead = document.createElement("thead");
+            tradeTable.insertBefore(tableHead, tradeTable.firstChild || null);
+        }
+
+        let headerRow = tableHead.querySelector("tr");
+        if (!headerRow) {
+            headerRow = document.createElement("tr");
+            tableHead.appendChild(headerRow);
+        }
+
+        headerRow.innerHTML = [
+            "<th>#</th>",
+            "<th>\u65e5\u671f\u6642\u9593</th>",
+            "<th>\u6210\u4ea4\u9ede\u4f4d</th>",
+            "<th>\u985e\u5225</th>",
+            "<th>\u9ede\u6578</th>",
+            "<th>\u624b\u7e8c\u8cbb</th>",
+            "<th>\u4ea4\u6613\u7a05</th>",
+            "<th>\u7406\u8ad6\u6de8\u640d\u76ca</th>",
+            "<th>\u7d2f\u7a4d\u7406\u8ad6\u6de8\u640d\u76ca</th>",
+            "<th>\u5be6\u969b\u6de8\u640d\u76ca</th>",
+            "<th>\u7d2f\u7a4d\u5be6\u969b\u6de8\u640d\u76ca</th>",
+        ].join("");
+    }
+
     function buildWeeklyExtremes(details, field) {
         const weeklyMap = new Map();
         (Array.isArray(details) ? details : []).forEach(function (detail) {
@@ -959,7 +1093,7 @@ end;`,
             min: values.length ? Math.min.apply(null, values) : 0,
         };
     }
-    function buildFuturesKpiDisplayRows(report) {
+    function buildFuturesKpiDisplayRowsLegacy(report) {
         if (!report || !report.theory || !report.actual) {
             return [];
         }
@@ -996,6 +1130,192 @@ end;`,
             { label: "手續費", theory: -Number(report.totals && report.totals.fee || 0), actual: -Number(report.totals && report.totals.fee || 0), type: "money", description: "依目前設定估算的累積雙邊手續費。" },
             { label: "交易稅", theory: -Number(report.totals && report.totals.tax || 0), actual: -Number(report.totals && report.totals.tax || 0), type: "money", description: "依契約金額與稅率估算的累積交易稅。" },
             { label: "滑價成本", theory: 0, actual: -Number(report.totals && report.totals.slippage || 0), type: "money", description: "依目前單邊滑點設定估算的累積滑價成本。" },
+        ];
+    }
+    function buildFuturesKpiRating(key, value) {
+        if (!key || !Number.isFinite(Number(value))) {
+            return null;
+        }
+
+        const numeric = Number(value);
+        let label = "Adequate";
+        let cssClass = "rating-adequate";
+        let ref = "-";
+
+        switch (key) {
+            case "maxdd_pct":
+                ref = "<= 20% 強；20-30% 可接受；> 30% 需優化";
+                if (numeric <= 0.20) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric > 0.30) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "total_return":
+            case "cagr":
+                ref = ">= 15% 強；5-15% 可接受；< 5% 需優化";
+                if (numeric >= 0.15) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric < 0.05) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "pf":
+                ref = ">= 1.5 強；1.1-1.5 可接受；< 1.1 需優化";
+                if (numeric >= 1.5) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric < 1.1) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "winrate":
+                ref = ">= 55% 強；45-55% 可接受；< 45% 需優化";
+                if (numeric >= 0.55) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric < 0.45) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "sharpe":
+                ref = ">= 1.5 強；0.8-1.5 可接受；< 0.8 需優化";
+                if (numeric >= 1.5) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric < 0.8) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "sortino":
+                ref = ">= 2.0 強；1.0-2.0 可接受；< 1.0 需優化";
+                if (numeric >= 2) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric < 1) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "calmar":
+                ref = ">= 0.5 強；0.2-0.5 可接受；< 0.2 需優化";
+                if (numeric >= 0.5) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric < 0.2) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "risk_ruin":
+                ref = "<= 5% 強；5-20% 可接受；> 20% 需優化";
+                if (numeric <= 0.05) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric > 0.20) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            case "cost_ratio":
+                ref = "<= 20% 強；20-40% 可接受；> 40% 需優化";
+                if (numeric <= 0.20) {
+                    label = "Strong";
+                    cssClass = "rating-strong";
+                } else if (numeric > 0.40) {
+                    label = "Improve";
+                    cssClass = "rating-improve";
+                }
+                break;
+            default:
+                return null;
+        }
+
+        return {
+            label: label,
+            cssClass: cssClass,
+            ref: ref,
+        };
+    }
+    function buildFuturesKpiDisplayRows(report) {
+        if (!report || !report.theory || !report.actual) {
+            return [];
+        }
+
+        const theory = report.theory;
+        const actual = report.actual;
+        const theoryDrawdownPct = Number.isFinite(Number(theory.maxDrawdownPct)) ? Number(theory.maxDrawdownPct) * 100 : null;
+        const actualDrawdownPct = Number.isFinite(Number(actual.maxDrawdownPct)) ? Number(actual.maxDrawdownPct) * 100 : null;
+        const theoryRiskOfRuinPct = Number.isFinite(Number(theory.riskOfRuin)) ? Number(theory.riskOfRuin) * 100 : null;
+        const actualRiskOfRuinPct = Number.isFinite(Number(actual.riskOfRuin)) ? Number(actual.riskOfRuin) * 100 : null;
+        const theoryCagrPct = Number.isFinite(Number(theory.cagr)) ? Number(theory.cagr) * 100 : null;
+        const actualCagrPct = Number.isFinite(Number(actual.cagr)) ? Number(actual.cagr) * 100 : null;
+        const theoryWinRatePct = Number.isFinite(Number(theory.winRate)) ? Number(theory.winRate) * 100 : null;
+        const actualWinRatePct = Number.isFinite(Number(actual.winRate)) ? Number(actual.winRate) * 100 : null;
+        const theoryLossRatePct = Number.isFinite(Number(theory.loseRate)) ? Number(theory.loseRate) * 100 : null;
+        const actualLossRatePct = Number.isFinite(Number(actual.loseRate)) ? Number(actual.loseRate) * 100 : null;
+        const theoryCostRatioPct = Number.isFinite(Number(theory.costRatio)) ? Number(theory.costRatio) * 100 : null;
+        const actualCostRatioPct = Number.isFinite(Number(actual.costRatio)) ? Number(actual.costRatio) * 100 : null;
+
+        return [
+            { kind: "section", label: "Tier 1 · 生存與尾端風險 (Risk / Survival)" },
+            { label: "最大回撤率 Max Drawdown %", theory: theoryDrawdownPct, actual: actualDrawdownPct, type: "percentAbs", tone: "low", ratingKey: "maxdd_pct", ratingValueTheory: theory.maxDrawdownPct, ratingValueActual: actual.maxDrawdownPct, description: "以本金為基準的最大淨值跌幅。" },
+            { label: "最大回撤金額 Max Drawdown", theory: theory.maxDrawdown, actual: actual.maxDrawdown, type: "moneyAbs", tone: "low", description: "累積淨損益從高點回落到低點的最大金額差。" },
+            { label: "破產風險 Risk of Ruin (近似)", theory: theoryRiskOfRuinPct, actual: actualRiskOfRuinPct, type: "percentAbs", tone: "low", ratingKey: "risk_ruin", ratingValueTheory: theory.riskOfRuin, ratingValueActual: actual.riskOfRuin, description: "用近似隨機漫步模型估計長期耗損到資金歸零的機率。" },
+            { label: "最差單日損益 Worst Day PnL", theory: theory.dayMin, actual: actual.dayMin, type: "money", description: "單一出場日加總後最差的一天。" },
+            { label: "最差單週損益 Worst Week PnL", theory: theory.worstWeekPnl, actual: actual.worstWeekPnl, type: "money", description: "以每週最後一天為結算點時最差的一週。" },
+            { label: "95% VaR (單筆)", theory: theory.varLoss, actual: actual.varLoss, type: "moneyAbs", tone: "low", description: "單筆損益在 95% 信心水準下的損失門檻。" },
+            { label: "95% CVaR (單筆)", theory: theory.cvarLoss, actual: actual.cvarLoss, type: "moneyAbs", tone: "low", description: "落入最差 5% 單筆時的平均損失。" },
+            { label: "回神時間 Time to Recovery (筆)", theory: theory.timeToRecoveryTrades, actual: actual.timeToRecoveryTrades, type: "count", description: "從最大回撤高點到谷底之間跨越的交易筆數。" },
+            { label: "Ulcer Index", theory: theory.ulcerIndex, actual: actual.ulcerIndex, type: "f4", description: "NAV 路徑下行壓力指標。" },
+            { label: "Recovery Factor", theory: theory.recoveryFactor, actual: actual.recoveryFactor, type: "f2", description: "總淨利相對於最大回撤的回復效率。" },
+            { kind: "section", label: "Tier 2 · 報酬與風險調整報酬 (Return / Risk-Adjusted)" },
+            { label: "淨利 Net Profit", theory: theory.totalNet, actual: actual.totalNet, type: "money", description: "整段回測累積後的最終淨利。" },
+            { label: "總報酬率 Total Return", theory: theory.totalReturnPct, actual: actual.totalReturnPct, type: "percent", ratingKey: "total_return", ratingValueTheory: theory.totalReturnPct / 100, ratingValueActual: actual.totalReturnPct / 100, description: "最終淨利除以本金後的整體報酬率。" },
+            { label: "年化報酬率 CAGR", theory: theoryCagrPct, actual: actualCagrPct, type: "percent", ratingKey: "cagr", ratingValueTheory: theory.cagr, ratingValueActual: actual.cagr, description: "以第一筆到最後一筆實際期間推估的複合年化報酬。" },
+            { label: "單筆波動 Trade Volatility", theory: theory.volatilityPerTrade, actual: actual.volatilityPerTrade, type: "moneyAbs", description: "以單筆損益標準差衡量交易級波動。" },
+            { label: "Sharpe Ratio", theory: theory.sharpeTrade, actual: actual.sharpeTrade, type: "f2", ratingKey: "sharpe", ratingValueTheory: theory.sharpeTrade, ratingValueActual: actual.sharpeTrade, description: "單筆損益均值相對總波動的風險調整效率。" },
+            { label: "Sortino Ratio", theory: theory.sortinoTrade, actual: actual.sortinoTrade, type: "f2", ratingKey: "sortino", ratingValueTheory: theory.sortinoTrade, ratingValueActual: actual.sortinoTrade, description: "只用下行波動衡量的報酬效率。" },
+            { label: "Calmar Ratio", theory: theory.calmar, actual: actual.calmar, type: "f2", ratingKey: "calmar", ratingValueTheory: theory.calmar, ratingValueActual: actual.calmar, description: "年化報酬率相對最大回撤的效率。" },
+            { kind: "section", label: "Tier 3 · 交易品質與結構 (Trade Quality / Structure)" },
+            { label: "交易筆數 #Trades", theory: theory.count, actual: actual.count, type: "count", description: "完整開平倉回合數。" },
+            { label: "獲利筆數 Win Trades", theory: theory.winCount, actual: actual.winCount, type: "count", description: "淨損益大於零的交易筆數。" },
+            { label: "虧損筆數 Loss Trades", theory: theory.lossCount, actual: actual.lossCount, type: "count", description: "淨損益小於零的交易筆數。" },
+            { label: "勝率 Hit Rate", theory: theoryWinRatePct, actual: actualWinRatePct, type: "percent", ratingKey: "winrate", ratingValueTheory: theory.winRate, ratingValueActual: actual.winRate, description: "獲利交易占全部回合的比率。" },
+            { label: "敗率 Loss Rate", theory: theoryLossRatePct, actual: actualLossRatePct, type: "percent", description: "虧損交易占全部回合的比率。" },
+            { label: "平均單筆 Avg Trade PnL", theory: theory.averageTrade, actual: actual.averageTrade, type: "money", description: "每筆交易的平均淨損益。" },
+            { label: "平均獲利 Avg Win", theory: theory.averageWinner, actual: actual.averageWinner, type: "money", description: "只計獲利交易時的平均淨損益。" },
+            { label: "平均虧損 Avg Loss", theory: theory.averageLoser, actual: actual.averageLoser, type: "money", description: "只計虧損交易時的平均淨損益。" },
+            { label: "盈虧比 Payoff Ratio", theory: theory.payoffRatio, actual: actual.payoffRatio, type: "f2", description: "平均獲利與平均虧損絕對值的比率。" },
+            { label: "期望值 Expectancy", theory: theory.expectancy, actual: actual.expectancy, type: "money", description: "長期平均每筆可期待的淨損益。" },
+            { label: "獲利因子 Profit Factor", theory: theory.profitFactor, actual: actual.profitFactor, type: "f2", ratingKey: "pf", ratingValueTheory: theory.profitFactor, ratingValueActual: actual.profitFactor, description: "總獲利除以總虧損絕對值。" },
+            { label: "總獲利 Gross Profit", theory: theory.grossProfit, actual: actual.grossProfit, type: "money", description: "所有賺錢交易加總後的淨利。" },
+            { label: "總虧損 Gross Loss", theory: theory.grossLoss, actual: actual.grossLoss, type: "money", description: "所有賠錢交易加總後的淨利。" },
+            { label: "最大單筆獲利 Largest Win", theory: theory.maxSingleWin, actual: actual.maxSingleWin, type: "money", description: "單筆交易中最好的獲利。" },
+            { label: "最大單筆虧損 Largest Loss", theory: theory.maxSingleLoss, actual: actual.maxSingleLoss, type: "money", description: "單筆交易中最差的虧損。" },
+            { label: "Kelly Fraction", theory: theory.kellyFraction, actual: actual.kellyFraction, type: "f2", description: "依勝率與盈虧比估算的 Kelly 值。" },
+            { kind: "section", label: "Tier 4 · 路徑與穩定度 (Path / Stability)" },
+            { label: "Equity Stability R²", theory: theory.stabilityR2, actual: actual.stabilityR2, type: "f3", description: "用線性回歸衡量資金曲線穩定度。" },
+            { label: "累積淨利高點 Equity High", theory: theory.cumulativeHigh, actual: actual.cumulativeHigh, type: "money", description: "歷史累積淨利曾到過的最高水位。" },
+            { label: "最佳單日損益 Best Day PnL", theory: theory.dayMax, actual: actual.dayMax, type: "money", description: "單一出場日加總後最好的一天。" },
+            { label: "最佳單週損益 Best Week PnL", theory: theory.bestWeekPnl, actual: actual.bestWeekPnl, type: "money", description: "以每週最後一天為結算點時最好的一週。" },
+            { kind: "section", label: "Tier 5 · 成本、周轉與執行 (Cost / Turnover / Execution)" },
+            { label: "交易日數 Trading Days", theory: theory.tradingDays, actual: actual.tradingDays, type: "count", description: "有平倉紀錄的實際交易日數。" },
+            { label: "平均日交易數 Trades / Day", theory: theory.tradesPerDay, actual: actual.tradesPerDay, type: "f2", description: "每個有交易日平均完成的回合數。" },
+            { label: "平均持有時間 Avg Holding Time (min)", theory: theory.averageHoldMinutes, actual: actual.averageHoldMinutes, type: "f1", description: "從進場到出場的平均持有分鐘數。" },
+            { label: "周轉率 Turnover", theory: theory.turnover, actual: actual.turnover, type: "f2", description: "名目成交金額相對本金的倍率。" },
+            { label: "交易成本比 Cost Ratio", theory: theoryCostRatioPct, actual: actualCostRatioPct, type: "percentAbs", tone: "low", ratingKey: "cost_ratio", ratingValueTheory: theory.costRatio, ratingValueActual: actual.costRatio, description: "手續費、交易稅與滑價合計占毛損益的比例。" },
+            { label: "總手續費 Total Commission", theory: theory.totalFee, actual: actual.totalFee, type: "moneyAbs", tone: "low", description: "整段回測累積手續費。" },
+            { label: "總交易稅 Total Tax", theory: theory.totalTax, actual: actual.totalTax, type: "moneyAbs", tone: "low", description: "整段回測累積交易稅。" },
+            { label: "總滑價成本 Slippage Cost", theory: theory.totalSlipCost, actual: actual.totalSlipCost, type: "moneyAbs", tone: "low", description: "依單邊滑點假設估算的累積滑價成本。" },
+            { label: "總交易成本 Total Trading Cost", theory: theory.totalCost, actual: actual.totalCost, type: "moneyAbs", tone: "low", description: "手續費、交易稅與滑價的總合。" },
         ];
     }
     function futuresKpiToneClass(row, value) {
@@ -3207,9 +3527,15 @@ end;`,
             .replace(/strategy_id=[^,\n]+/g, "strategy_id=" + strategyId);
     }
 
-    function renderFuturesKpiRows(report) {
+    function renderFuturesKpiRowsLegacy(report) {
         if (!futuresKpiBody) {
             return;
+        }
+
+        const futuresKpiWrap = futuresKpiBody.closest(".futures-kpi-table-wrap");
+        if (futuresKpiWrap) {
+            futuresKpiWrap.scrollLeft = 0;
+            futuresKpiWrap.scrollTop = 0;
         }
 
         const rows = buildFuturesKpiDisplayRows(report);
@@ -3228,6 +3554,54 @@ end;`,
                 '<td><span class="futures-kpi-value ' + futuresKpiToneClass(row, row.theory) + '">' + formatFutureValue(row.theory, row.type) + "</span></td>",
                 '<td><span class="futures-kpi-value ' + futuresKpiToneClass(row, row.actual) + '">' + formatFutureValue(row.actual, row.type) + "</span></td>",
                 '<td class="futures-kpi-desc">' + escapeHtml(row.description || "") + "</td>",
+                "</tr>",
+            ].join("");
+        }).join("");
+    }
+
+    function renderFuturesKpiRows(report) {
+        if (!futuresKpiBody) {
+            return;
+        }
+
+        const futuresKpiWrap = futuresKpiBody.closest(".futures-kpi-table-wrap");
+        if (futuresKpiWrap) {
+            futuresKpiWrap.scrollLeft = 0;
+            futuresKpiWrap.scrollTop = 0;
+        }
+
+        const rows = buildFuturesKpiDisplayRows(report);
+        if (!rows.length) {
+            futuresKpiBody.innerHTML = '<tr><td colspan="6">蝑??摰?敺＊蝷箝?/td></tr>';
+            return;
+        }
+
+        futuresKpiBody.innerHTML = rows.map(function (row) {
+            if (row.kind === "section") {
+                return '<tr class="is-section"><td colspan="6">' + escapeHtml(row.label) + "</td></tr>";
+            }
+
+            const theoryRating = buildFuturesKpiRating(
+                row.ratingKey,
+                row.ratingValueTheory !== undefined ? row.ratingValueTheory : row.theory
+            );
+            const actualRating = buildFuturesKpiRating(
+                row.ratingKey,
+                row.ratingValueActual !== undefined ? row.ratingValueActual : row.actual
+            );
+            const theoryTone = futuresKpiToneClass(row, row.theory);
+            const actualTone = futuresKpiToneClass(row, row.actual);
+            const theoryClass = ["futures-kpi-value", theoryTone, theoryRating ? theoryRating.cssClass : ""].filter(Boolean).join(" ");
+            const actualClass = ["futures-kpi-value", actualTone, actualRating ? actualRating.cssClass : ""].filter(Boolean).join(" ");
+
+            return [
+                "<tr>",
+                '<td class="futures-kpi-name">' + escapeHtml(row.label) + "</td>",
+                '<td><span class="' + theoryClass + '">' + formatFutureValue(row.theory, row.type) + "</span></td>",
+                '<td><span class="' + actualClass + '">' + formatFutureValue(row.actual, row.type) + "</span></td>",
+                '<td class="futures-kpi-desc">' + escapeHtml(row.description || "") + "</td>",
+                '<td class="futures-kpi-rating ' + (actualRating ? actualRating.cssClass : "") + '">' + escapeHtml(actualRating ? actualRating.label : "-") + "</td>",
+                '<td class="futures-kpi-ref">' + escapeHtml(actualRating ? actualRating.ref : "-") + "</td>",
                 "</tr>",
             ].join("");
         }).join("");
@@ -3292,6 +3666,89 @@ end;`,
         if (tradeDetailNote) {
             tradeDetailNote.textContent = "共 " + formatMetricCount(details.length) + " 筆完整交易，按出場時間排序；含滑價欄位已納入目前單邊滑點 "
                 + formatCompactNumber(report.config && report.config.slipPerSide) + " 點。";
+        }
+    }
+
+    function renderTradeDetailRows(report) {
+        if (!tradeDetailBody) {
+            return;
+        }
+
+        ensureTradeDetailHeader();
+        const tradeTableWrap = tradeDetailBody.closest(".trade-detail-table-wrap");
+        if (tradeTableWrap) {
+            tradeTableWrap.scrollLeft = 0;
+            tradeTableWrap.scrollTop = 0;
+        }
+
+        if (!report || !Array.isArray(report.details) || !report.details.length) {
+            tradeDetailBody.innerHTML = '<tr><td colspan="11">\u5c1a\u7121\u5b8c\u6574\u4ea4\u6613\u660e\u7d30\u53ef\u986f\u793a\u3002</td></tr>';
+            if (tradeDetailNote) {
+                tradeDetailNote.textContent = "\u5c1a\u672a\u7522\u751f\u5b8c\u6574\u4ea4\u6613\uff0c\u986f\u793a\u5340\u6703\u5728\u6709\u9032\u51fa\u914d\u5c0d\u5f8c\u81ea\u52d5\u88dc\u4e0a\u3002";
+            }
+            return;
+        }
+
+        const details = report.details.slice().sort(function (left, right) {
+            const leftKey = String(left && (left.entryTs || left.exitTs) || "");
+            const rightKey = String(right && (right.entryTs || right.exitTs) || "");
+            return leftKey.localeCompare(rightKey);
+        });
+
+        let theoryAccum = 0;
+        let actualAccum = 0;
+
+        tradeDetailBody.innerHTML = details.map(function (detail, index) {
+            const theoryPnl = Number(detail && detail.theoryPnl);
+            const actualPnl = Number(detail && detail.actualPnl);
+            theoryAccum += Number.isFinite(theoryPnl) ? theoryPnl : 0;
+            actualAccum += Number.isFinite(actualPnl) ? actualPnl : 0;
+
+            const side = detail && detail.side;
+            const entryAction = formatTradeAction(detail && detail.entryAction, side, "entry");
+            const exitAction = formatTradeAction(detail && detail.exitAction, side, "exit");
+            const entryActionClass = tradeActionClass(entryAction, side);
+            const exitActionClass = tradeActionClass(exitAction, side);
+            const pointTone = tradeToneClass(detail && detail.points);
+            const theoryTone = tradeToneClass(theoryPnl);
+            const actualTone = tradeToneClass(actualPnl);
+            const theoryAccumTone = tradeToneClass(theoryAccum);
+            const actualAccumTone = tradeToneClass(actualAccum);
+            const emptyCell = buildTradeEmptyCell();
+
+            return [
+                '<tr class="trade-detail-entry-row">',
+                '<td class="trade-detail-index" rowspan="2">' + (index + 1) + "</td>",
+                '<td class="trade-detail-time">' + escapeHtml(formatTradeTimestamp(detail && detail.entryTs)) + "</td>",
+                '<td class="trade-detail-price">' + escapeHtml(formatTradePrice(detail && detail.entryPrice)) + "</td>",
+                '<td class="trade-detail-action ' + entryActionClass + '">' + escapeHtml(entryAction) + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "<td>" + emptyCell + "</td>",
+                "</tr>",
+                '<tr class="trade-detail-exit-row">',
+                '<td class="trade-detail-time">' + escapeHtml(formatTradeTimestamp(detail && detail.exitTs)) + "</td>",
+                '<td class="trade-detail-price">' + escapeHtml(formatTradePrice(detail && detail.exitPrice)) + "</td>",
+                '<td class="trade-detail-action ' + exitActionClass + '">' + escapeHtml(exitAction) + "</td>",
+                '<td><span class="trade-detail-points ' + pointTone + '">' + escapeHtml(formatTradePoints(detail && detail.points)) + "</span></td>",
+                "<td>" + formatMetricMoney(detail && detail.fee) + "</td>",
+                "<td>" + formatMetricMoney(detail && detail.tax) + "</td>",
+                '<td><span class="trade-detail-money ' + theoryTone + '">' + formatSignedMoney(theoryPnl) + "</span></td>",
+                '<td><span class="trade-detail-money ' + theoryAccumTone + '">' + formatSignedMoney(theoryAccum) + "</span></td>",
+                '<td><span class="trade-detail-money ' + actualTone + '">' + formatSignedMoney(actualPnl) + "</span></td>",
+                '<td><span class="trade-detail-money ' + actualAccumTone + '">' + formatSignedMoney(actualAccum) + "</span></td>",
+                "</tr>",
+            ].join("");
+        }).join("");
+
+        if (tradeDetailNote) {
+            tradeDetailNote.textContent = "\u5171 " + formatMetricCount(details.length)
+                + " \u7b46\u5b8c\u6574\u4ea4\u6613\uff0c\u6bcf\u7b46\u62c6\u6210\u9032\u5834\u8207\u51fa\u5834\u5169\u5217\uff1b\u542b\u6ed1\u50f9\u6b04\u4f4d\u5df2\u7d0d\u5165\u76ee\u524d\u55ae\u908a\u6ed1\u9ede "
+                + formatCompactNumber(report.config && report.config.slipPerSide) + " \u9ede\u3002";
         }
     }
 

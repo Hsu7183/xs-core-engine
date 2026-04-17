@@ -1,9 +1,9 @@
 {
   "kind": "d1",
-  "rows": 1524,
+  "rows": 1522,
   "range": {
     "startDate": "20200102",
-    "endDate": "20260416"
+    "endDate": "20260414"
   },
   "parts": [
     {
@@ -384,7 +384,7 @@
     {
       "month": "202604",
       "file": "d1/202604.txt",
-      "rows": 10
+      "rows": 8
     }
   ]
 }

@@ -1,6 +1,6 @@
 # START HERE
 
-Last updated: 2026-04-16
+Last updated: 2026-04-18
 
 This file is the clean entry point for future Codex sessions.
 Read it first when resuming work in this repository.
@@ -50,15 +50,15 @@ Then branch based on the task:
 
 ## Current Data Snapshot
 
-- `M1` rows: `455,759`
-- `M1` latest timestamp: `20260415 132800`
-- `D1` rows: `1,522`
-- `D1` latest date: `20260414`
+- `M1` rows: `456,328`
+- `M1` latest timestamp: `20260417 131200`
+- `D1` rows: `1,524`
+- `D1` latest date: `20260416`
 
 Important historical note:
 
-- `D1` overlap matched, so only the new tail rows are eligible to append.
-- `M1` previously showed overlap divergence from `202506` onward.
+- Latest accepted refresh matched the stored overlap after dedupe for both datasets.
+- `M1` was intentionally truncated at `20260417 131200` because that is the active backtest cutoff.
 - Current rule: if the overlapping portion does not exactly match stored data, stop and do not write the new dataset into the bundle.
 
 ## Homepage Status

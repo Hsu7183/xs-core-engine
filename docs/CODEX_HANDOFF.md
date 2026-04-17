@@ -1,9 +1,21 @@
 # Codex Handoff
 
-Last updated: 2026-04-16
+Last updated: 2026-04-18
 
 This file is the current cross-device handoff for `xs-core-engine`.
 On another computer, ask Codex to read this file first, then continue work.
+
+## 2026-04-18 Data Refresh
+
+- Accepted a new XQ market-data refresh after strict overlap verification and dedupe.
+- Imported `M1` through `20260417 131200`, intentionally stopping at the current backtest cutoff instead of waiting for a full-session close.
+- Imported `D1` through `20260416`.
+- Current bundled snapshot:
+  - `M1` rows: `456,328`
+  - `D1` rows: `1,524`
+- Revalidated the monthly bundle with:
+  - `node scripts/validate_data_bundle.mjs --m1 data/bundled/legacy-01/m1 --d1 data/bundled/legacy-01/d1 --m1-format legacy --d1-format legacy --allow-daily-anchor-rebuild --json`
+  - result: `ok=true`
 
 ## What Changed Today
 
@@ -168,21 +180,19 @@ New source files used:
 Comparison outcome:
 
 - `D1`
-  - overlapping history matched the stored dataset
+  - overlapping history matched the stored dataset after dedupe
   - safe action: append only the new tail rows
-  - latest stored date is now `20260414`
+  - latest stored date is now `20260416`
 - `M1`
-  - overlapping history was not a pure append all the way through
-  - divergence started from `202506`
-  - under the current strict policy, this kind of overlap mismatch must block the write instead of replacing stored data
-  - latest stored timestamp is now `20260415 132800`
+  - overlapping history matched the stored dataset after dedupe
+  - accepted import boundary was intentionally truncated to the active backtest cutoff
+  - latest stored timestamp is now `20260417 131200`
 
-Do not summarize this as "M1 and D1 were both fully identical."  
-The correct summary is:
+Current summary:
 
-- `D1` overlap matched
-- `M1` showed overlap divergence from `202506+`
-- going forward, overlap mismatch must stop the import and trigger manual review
+- `D1` overlap matched and the new tail rows were appended
+- `M1` overlap matched after dedupe and the new tail rows were appended through the backtest cutoff
+- going forward, overlap mismatch must still stop the import and trigger manual review
 
 ### Monthly Split State
 
@@ -206,13 +216,13 @@ Homepage bundled data loading now uses the per-dataset `manifest.json` files und
 
 After dedupe and migration:
 
-- `M1`: `455,759`
-- `D1`: `1,522`
+- `M1`: `456,328`
+- `D1`: `1,524`
 
 Latest ends:
 
-- `M1`: `20260415 132800`
-- `D1`: `20260414`
+- `M1`: `20260417 131200`
+- `D1`: `20260416`
 
 ### Validation Status
 

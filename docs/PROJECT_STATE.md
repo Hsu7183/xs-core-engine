@@ -1,6 +1,6 @@
 # PROJECT STATE
 
-Last updated: 2026-04-16
+Last updated: 2026-04-18
 
 ## Summary
 
@@ -25,12 +25,13 @@ Useful legacy materials have already been imported into repo-owned locations.
 ## Data State
 
 - `M1`
-  - rows: `455,759`
-  - latest timestamp: `20260415 132800`
+  - rows: `456,328`
+  - latest timestamp: `20260417 131200`
+  - accepted import boundary: truncated to the active backtest cutoff instead of a full-session close
   - refresh behavior: future writes must pass strict overlap verification before appending any new tail rows
 - `D1`
-  - rows: `1,522`
-  - latest date: `20260414`
+  - rows: `1,524`
+  - latest date: `20260416`
   - refresh behavior: overlap must match exactly, then append only the new tail rows
 
 ## Audit Note Before Computer Switch
@@ -63,7 +64,7 @@ Useful legacy materials have already been imported into repo-owned locations.
 2. A fully automated file-input harness is still desirable if we want repeatable homepage verification.
 3. Some legacy strings outside the current visible homepage path may still deserve cleanup.
 4. `mqquant/02` depends on an external source root and could not be fully certified on this machine because its default `C:\xs_optimizer_v1` path is absent.
-5. The monthly shard directories are still untracked locally and must not be pushed until a real XQ export passes strict overlap verification.
+5. DailyAnchor rows are still rebuilt separately; the current monthly `M1 + D1` bundle is valid, but anchor regeneration remains an explicit follow-up step after refresh.
 
 ## Recommended Next Milestone
 
